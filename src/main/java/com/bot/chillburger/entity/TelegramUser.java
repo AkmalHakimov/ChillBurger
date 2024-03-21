@@ -25,4 +25,9 @@ public class TelegramUser {
     @Enumerated(EnumType.STRING)
     private BotState state;
     private String phone;
+    private String selectedLang;
+    private Integer contactMessageId;
+    private Integer cityMsgId;
+    private String selectedCity;
+    private Integer mainSecBtnsId;
 }
