@@ -1,9 +1,12 @@
 package com.bot.chillburger.telegramBot;
 
-import com.bot.chillburger.enums.BotCallBackData;
+import com.bot.chillburger.entity.Category;
+import com.bot.chillburger.entity.OrderProduct;
+import com.bot.chillburger.entity.Product;
+import com.bot.chillburger.enums.*;
 import com.bot.chillburger.entity.TelegramUser;
-import com.bot.chillburger.enums.BotMessage;
-import com.bot.chillburger.enums.BotState;
+import com.bot.chillburger.repository.CategoryRepo;
+import com.bot.chillburger.repository.ProductRepo;
 import com.bot.chillburger.repository.TelegramUserRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -12,36 +15,42 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
-import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
-import org.telegram.telegrambots.meta.api.objects.Contact;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class AppBot extends TelegramLongPollingBot {
 
     TelegramUser telegramUser = null;
+    String photoId = "AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ";
     String adminChatId = "1539471133";
     private final TelegramUserRepo telegramUserRepo;
+    private final CategoryRepo categoryRepo;
+    private final ProductRepo productRepo;
 
 
     @SneakyThrows
     @Autowired
-    public AppBot(TelegramBotsApi api, TelegramUserRepo telegramUserRepo) {
+    public AppBot(TelegramBotsApi api, TelegramUserRepo telegramUserRepo, CategoryRepo categoryRepo,ProductRepo productRepo) {
         this.telegramUserRepo = telegramUserRepo;
+        this.categoryRepo = categoryRepo;
+        this.productRepo = productRepo;
         api.registerBot(this);
     }
 
@@ -76,10 +85,6 @@ public class AppBot extends TelegramLongPollingBot {
                     saveTelegramUserToDb();
                     execute(sendMessage);
                 } else if (telegramUser.getState().equals(BotState.SELECT_CITY)) {
-                    DeleteMessage deleteMessage = new DeleteMessage();
-                    deleteMessage.setChatId(chatId);
-                    deleteMessage.setMessageId(telegramUser.getCityMsgId());
-                    execute(deleteMessage);
                     telegramUser.setSelectedCity(text);
                     menuButtons(chatId);
                 } else if (telegramUser.getState().equals(BotState.MAIN_SECTION)) {
@@ -119,22 +124,116 @@ public class AppBot extends TelegramLongPollingBot {
                         telegramUser.setState(BotState.MAIN_SECTION);
                         saveTelegramUserToDb();
                         sendSelectSectionMsg(chatId);
-                    } else if (text.equals(ShowBotMessage(BotMessage.SETTINGS_BTN_MSG))) {
-
+                    } else if (text.equals(ShowBotMessage(BotMessage.MENU_BTN_MSG))) {
+                        menuDeliverySection(chatId);
+                        telegramUser.setState(BotState.MENU_SELECT_DELIVERY_TYPE);
+                        saveTelegramUserToDb();
                     }
-                }else if(telegramUser.getState().equals(BotState.CONTACT_ADMIN)){
+                } else if (telegramUser.getState().equals(BotState.CONTACT_ADMIN)) {
                     SendMessage sendMessage = new SendMessage();
                     sendMessage.setChatId(adminChatId);
                     sendMessage.setText(text);
                     execute(sendMessage);
                     sendSelectSectionMsg(chatId);
+                } else if (telegramUser.getState().equals(BotState.MENU_SELECT_DELIVERY_TYPE)) {
+                    if (checkStateForBackBtn(text)) {
+                        menuButtons(chatId);
+                    } else if (text.equals(ShowBotMessage(BotMessage.MAIN_MENU_DELIVERY_BTN_MSG))) {
+                        SendMessage sendMessage = new SendMessage();
+                        sendMessage.setChatId(chatId);
+                        sendMessage.setText(ShowBotMessage(BotMessage.MAIN_MENU_DELIVERY_MSG));
+                        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+                        List<KeyboardRow> rows = new ArrayList<>();
+                        KeyboardRow row = new KeyboardRow();
+                        KeyboardRow row1 = new KeyboardRow();
+                        KeyboardButton button = new KeyboardButton();
+                        button.setText(ShowBotMessage(BotMessage.FIND_NEAR_BRANCH_BTN_MSG));
+                        button.setRequestLocation(true);
+                        row.add(button);
+                        KeyboardButton button1 = new KeyboardButton();
+                        button1.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
+                        row1.add(button1);
+                        rows.add(row);
+                        rows.add(row1);
+                        replyKeyboardMarkup.setKeyboard(rows);
+                        replyKeyboardMarkup.setSelective(true);
+                        replyKeyboardMarkup.setResizeKeyboard(true);
+                        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+                        Message execute = execute(sendMessage);
+                        telegramUser.setState(BotState.FIND_CLOSE_BRANCH);
+                        saveTelegramUserToDb();
+                    } else if (text.equals(ShowBotMessage(BotMessage.MAIN_MENU_TAKE_AWAY_BTN_MSG))) {
+                        SendMessage sendMessage = new SendMessage();
+                        sendMessage.setChatId(chatId);
+                        sendMessage.setText(ShowBotMessage(BotMessage.MAIN_MENU_TAKE_AWAY_MSG));
+                        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+                        List<KeyboardRow> rows = new ArrayList<>();
+                        KeyboardRow row = new KeyboardRow();
+                        KeyboardButton button = new KeyboardButton();
+                        button.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
+                        row.add(button);
+                        KeyboardButton button1 = new KeyboardButton();
+                        button1.setText(ShowBotMessage(BotMessage.FIND_NEAR_BRANCH_BTN_MSG));
+                        button1.setRequestLocation(true);
+                        row.add(button1);
+                        KeyboardRow row1 = new KeyboardRow();
+                        KeyboardButton button2 = new KeyboardButton();
+                        button2.setText(ShowBotMessage(BotMessage.BELISSIMO_BUKHARA));
+                        row1.add(button2);
+                        rows.add(row);
+                        rows.add(row1);
+                        replyKeyboardMarkup.setKeyboard(rows);
+                        replyKeyboardMarkup.setSelective(true);
+                        replyKeyboardMarkup.setResizeKeyboard(true);
+                        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+                        execute(sendMessage);
+                        telegramUser.setState(BotState.TAKE_AWAY_SELECT_TYPE);
+                        saveTelegramUserToDb();
+                    }
+                } else if (telegramUser.getState().equals(BotState.FIND_CLOSE_BRANCH) && checkStateForBackBtn(text)) {
+                    menuDeliverySection(chatId);
+                    telegramUser.setState(BotState.MENU_SELECT_DELIVERY_TYPE);
+                    saveTelegramUserToDb();
+                } else if (telegramUser.getState().equals(BotState.TAKE_AWAY_SELECT_TYPE)) {
+                    if (checkStateForBackBtn(text)) {
+                        menuDeliverySection(chatId);
+                        telegramUser.setState(BotState.MENU_SELECT_DELIVERY_TYPE);
+                        saveTelegramUserToDb();
+                    } else if (text.equals(ShowBotMessage(BotMessage.FIND_NEAR_BRANCH_BTN_MSG))) {
+                        menuDeliverySection(chatId);
+                        telegramUser.setState(BotState.MENU_SELECT_DELIVERY_TYPE);
+                        saveTelegramUserToDb();
+                    } else if (text.equals(ShowBotMessage(BotMessage.BELISSIMO_BUKHARA))) {
+                        interactiveMenuSection(chatId, message);
+                    }
+                }else if(telegramUser.getState().equals(BotState.SELECT_INTERACTIVE_MENU)){
+                    Category category = categoryRepo.findByEngNameContainingOrUzNameContaining(text,text);
+                    if(checkStateForBackBtn(text)){
+                        menuDeliverySection(chatId);
+                        telegramUser.setState(BotState.MENU_SELECT_DELIVERY_TYPE);
+                        saveTelegramUserToDb();
+                    } else if (text.equals(ShowBotMessage(BotMessage.BASKET_BTN_MSG))) {
+                        System.out.println("this is basket");
+                    }else if(category != null){
+                        createProductSectionByCategory(category,chatId);
+                    }
+                } else if (telegramUser.getState().equals(BotState.ADD_PRODUCT_MENU)) {
+                    Product product = productRepo.findByEngNameContainingOrUzNameContaining(text,text);
+                    if(checkStateForBackBtn(text)){
+                        interactiveMenuSection(chatId,message);
+                        telegramUser.setState(BotState.SELECT_INTERACTIVE_MENU);
+                        saveTelegramUserToDb();
+                    } else if (text.equals(ShowBotMessage(BotMessage.BASKET_BTN_MSG))) {
+                        System.out.println("this is basket");
+                    }else if(product != null){
+                        addBasketSection(product,chatId);
+                    }
                 }
             } else if (message.hasContact() && telegramUser.getState().equals(BotState.SHARE_CONTACT)) {
                 Contact contact = message.getContact();
                 String x = contact.getPhoneNumber();
                 String phoneNumber = x.startsWith("+998") ? x : "+998" + x;
                 telegramUser.setPhone(phoneNumber);
-                deleteContactMsgId(chatId);
                 SendMessage sendMessage = new SendMessage();
                 sendMessage.setChatId(chatId);
                 sendMessage.setText(ShowBotMessage(BotMessage.CHOOSE_CITY_MSG));
@@ -191,8 +290,21 @@ public class AppBot extends TelegramLongPollingBot {
                 sendMessage.setReplyMarkup(replyKeyboardMarkup);
                 Message execute = execute(sendMessage);
                 telegramUser.setState(BotState.SELECT_CITY);
-                telegramUser.setCityMsgId(execute.getMessageId());
                 saveTelegramUserToDb();
+            } else if (message.hasLocation() && (telegramUser.getState().equals(BotState.FIND_CLOSE_BRANCH) || telegramUser.getState().equals(BotState.TAKE_AWAY_SELECT_TYPE))) {
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setText(ShowBotMessage(BotMessage.NOT_FOUND_BRANCH_MSG));
+                sendMessage.setChatId(chatId);
+                execute(sendMessage);
+                telegramUser.setState(BotState.FIND_CLOSE_BRANCH);
+                saveTelegramUserToDb();
+            }else if(message.hasPhoto()){
+                PhotoSize first = message.getPhoto().getFirst();
+                for (PhotoSize photoSize : message.getPhoto()) {
+                    System.out.println(photoSize.getFileSize());
+                    Integer fileSize = photoSize.getFileSize();
+                }
+                System.out.println(first.getFileId());
             }
         } else if (update.hasCallbackQuery()) {
             CallbackQuery callbackQuery = update.getCallbackQuery();
@@ -206,7 +318,6 @@ public class AppBot extends TelegramLongPollingBot {
                 sendMessage.setChatId(chatId);
                 sendMessage.setReplyMarkup(generateContactBtn());
                 Message execute = execute(sendMessage);
-                telegramUser.setContactMessageId(execute.getMessageId());
                 telegramUser.setState(BotState.SHARE_CONTACT);
                 saveTelegramUserToDb();
             } else if (telegramUser.getState().equals(BotState.MAIN_SECTION)) {
@@ -226,6 +337,216 @@ public class AppBot extends TelegramLongPollingBot {
                 }
             }
         }
+    }
+
+    private void addBasketSection(Product product, Long chatId) throws TelegramApiException {
+        SendMessage sendMessage = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.SELECT_SIZE_AND_MODIFICATOR));
+        ReplyKeyboardRemove replyKeyboardRemove = new ReplyKeyboardRemove();
+        replyKeyboardRemove.setRemoveKeyboard(true);
+        sendMessage.setReplyMarkup(replyKeyboardRemove);
+        execute(sendMessage);
+
+
+        SendPhoto sendPhoto = new SendPhoto();
+        sendPhoto.setChatId(chatId);
+        sendPhoto.setPhoto(new InputFile(product.getPhotoId()));
+        sendPhoto.setCaption(product.getUzName() + ProductSize.SMALL + "\n" +
+                "Hamir turi: " + ProductType.THIN + "\n" +
+                (product.getDescription()!=null? product.getDescription() : " ") + "\n" +
+                "Narx: " + product.getPrice() +     " so'm");
+//        sendPhoto.setCaption("123");
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        InlineKeyboardButton button = new InlineKeyboardButton();
+        button.setText("маленькая");
+        button.setCallbackData(BotCallBackData.SMALL.toString());
+        InlineKeyboardButton button1 = new InlineKeyboardButton();
+        button1.setText("средняя");
+        button1.setCallbackData(BotCallBackData.MEDIUM.name());
+        InlineKeyboardButton button2 = new InlineKeyboardButton();
+        button2.setText("большая");
+        button2.setCallbackData(BotCallBackData.HUGE.toString());
+        row.add(button);
+        row.add(button1);
+        row.add(button2);
+
+        List<InlineKeyboardButton> row1 = new ArrayList<>();
+        InlineKeyboardButton button3 = new InlineKeyboardButton();
+        button3.setText("Yupqa");
+        button3.setCallbackData(BotCallBackData.THIN.toString());
+        InlineKeyboardButton button4 = new InlineKeyboardButton();
+        button4.setText("qalin");
+        button4.setCallbackData(BotCallBackData.THICK.toString());
+        InlineKeyboardButton button5 = new InlineKeyboardButton();
+        button5.setText("Hot-dog bort");
+        button5.setCallbackData(BotCallBackData.HOT_DOG_BORT.toString());
+        row1.add(button3);
+        row1.add(button4);
+        row1.add(button5);
+
+        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        InlineKeyboardButton button6 = new InlineKeyboardButton();
+        button6.setText("-");
+        button6.setCallbackData(BotCallBackData.MINUS.toString());
+        InlineKeyboardButton button7 = new InlineKeyboardButton();
+        button7.setText(findUserByChatId(chatId).getAmountCounter().toString());
+        button7.setCallbackData("123");
+        InlineKeyboardButton button8 = new InlineKeyboardButton();
+        button8.setText("+");
+        button8.setCallbackData(BotCallBackData.PLUS.toString());
+        row2.add(button6);
+        row2.add(button7);
+        row2.add(button8);
+
+        List<InlineKeyboardButton> row3 = new ArrayList<>();
+        InlineKeyboardButton button9 = new InlineKeyboardButton();
+        button9.setText(ShowBotMessage(BotMessage.ADD_TO_BASKET_BTN_MSG));
+        button9.setCallbackData(BotCallBackData.ADD_TO_BASKET.name());
+
+        row3.add(button9);
+
+        rows.add(row);
+        rows.add(row1);
+        rows.add(row2);
+        rows.add(row3);
+        inlineKeyboardMarkup.setKeyboard(rows);
+        sendPhoto.setReplyMarkup(inlineKeyboardMarkup);
+
+        execute(sendPhoto);
+        telegramUser.setState(BotState.ADD_TO_BASKET);
+        saveTelegramUserToDb();
+    }
+
+    private boolean checkStateForBackBtn(String text) {
+        return text.equals(ShowBotMessage(BotMessage.BACK_BTN_MSG));
+    }
+
+    private void createProductSectionByCategory(Category category, Long chatId) throws TelegramApiException {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        sendMessage.setText(telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString())? category.getUzName() + " ni tanlang" : "choose the " + category.getEngName());
+
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> rows = new ArrayList<>();
+        KeyboardRow row = new KeyboardRow();
+        KeyboardButton button = new KeyboardButton();
+        KeyboardButton button1 = new KeyboardButton();
+        button.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
+        button1.setText(ShowBotMessage(BotMessage.BASKET_BTN_MSG));
+        row.add(button);
+        row.add(button1);
+        rows.add(row);
+
+        List<Product> categoryProducts = productRepo.findAllByCategoryId(category.getId());
+        double rowCount = Math.ceil((double) categoryProducts.toArray().length / 2);
+        for (int i = 0; i < rowCount; i++) {
+            KeyboardRow row1 = new KeyboardRow();
+            rows.add(row1);
+        }
+
+        int currentRow = 1;
+        int count = 0;
+
+        for (Product products : categoryProducts) {
+            if(count>1){
+                count = 0;
+                currentRow++;
+            }
+            KeyboardButton button2 = new KeyboardButton();
+            button2.setText(defineItsLangByProduct(products));
+            KeyboardRow row1 = rows.get(currentRow);
+            row1.add(button2);
+            count++;
+        }
+        replyKeyboardMarkup.setKeyboard(rows);
+        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        execute(sendMessage);
+        telegramUser.setState(BotState.ADD_PRODUCT_MENU);
+        telegramUser.setCategoryId(category.getId());
+        saveTelegramUserToDb();
+    }
+
+    private void interactiveMenuSection(Long chatId, Message message) throws TelegramApiException {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(chatId);
+        String fullName = message.getFrom().getFirstName() + message.getFrom().getLastName();
+        sendMessage.setText(fullName + ShowBotMessage(BotMessage.INTERACTIVE_MENU_MSG));
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> rows = new ArrayList<>();
+        KeyboardRow row = new KeyboardRow();
+        KeyboardButton button = new KeyboardButton();
+        KeyboardButton button1 = new KeyboardButton();
+        button.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
+        button1.setText(ShowBotMessage(BotMessage.BASKET_BTN_MSG));
+        row.add(button);
+        row.add(button1);
+        rows.add(row);
+
+        List<Category> categories = categoryRepo.findAll();
+        double rowCount = Math.ceil((double) categories.toArray().length / 2);
+        for (int i = 0; i < rowCount; i++) {
+            KeyboardRow row1 = new KeyboardRow();
+            rows.add(row1);
+        }
+
+        int currentRow = 1;
+        int count = 0;
+
+        for (Category category : categories) {
+            if(count>1){
+                count = 0;
+                currentRow++;
+            }
+                KeyboardButton button2 = new KeyboardButton();
+                button2.setText(defineItsLangByCategory(category));
+                KeyboardRow row1 = rows.get(currentRow);
+                row1.add(button2);
+                count++;
+        }
+        replyKeyboardMarkup.setKeyboard(rows);
+        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        execute(sendMessage);
+        telegramUser.setState(BotState.SELECT_INTERACTIVE_MENU);
+        saveTelegramUserToDb();
+    }
+
+    private String defineItsLangByCategory(Category category) {
+        return telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? category.getUzName() : category.getEngName();
+    }
+
+    private String defineItsLangByProduct(Product product) {
+        return telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? product.getUzName() : product.getEngName();
+    }
+
+    private void menuDeliverySection(Long chatId) throws TelegramApiException {
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setText(ShowBotMessage(BotMessage.MAIN_MENU_MSG));
+        sendMessage.setChatId(chatId);
+        ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
+        List<KeyboardRow> rows = new ArrayList<>();
+        KeyboardRow row = new KeyboardRow();
+        KeyboardButton button = new KeyboardButton();
+        button.setText(ShowBotMessage(BotMessage.MAIN_MENU_DELIVERY_BTN_MSG));
+        KeyboardButton button1 = new KeyboardButton();
+        button1.setText(ShowBotMessage(BotMessage.MAIN_MENU_TAKE_AWAY_BTN_MSG));
+        row.add(button);
+        row.add(button1);
+        KeyboardRow row1 = new KeyboardRow();
+        KeyboardButton button2 = new KeyboardButton();
+        button2.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
+        row1.add(button2);
+        rows.add(row);
+        rows.add(row1);
+        replyKeyboardMarkup.setKeyboard(rows);
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
+        sendMessage.setReplyMarkup(replyKeyboardMarkup);
+        Message execute = execute(sendMessage);
     }
 
     private void sendSelectSectionMsg(Long chatId) throws TelegramApiException {
@@ -268,18 +589,12 @@ public class AppBot extends TelegramLongPollingBot {
         rows.add(row1);
         rows.add(row2);
         replyKeyboardMarkup.setKeyboard(rows);
+        replyKeyboardMarkup.setSelective(true);
+        replyKeyboardMarkup.setResizeKeyboard(true);
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
         Message execute = execute(sendMessage);
         telegramUser.setState(BotState.MAIN_SECTION);
-        telegramUser.setMainSecBtnsId(execute.getMessageId());
         saveTelegramUserToDb();
-    }
-
-    private void deleteContactMsgId(Long chatId) throws TelegramApiException {
-        DeleteMessage deleteMessage = new DeleteMessage();
-        deleteMessage.setChatId(chatId);
-        deleteMessage.setMessageId(telegramUser.getContactMessageId());
-        execute(deleteMessage);
     }
 
     private void saveTelegramUserToDb() {

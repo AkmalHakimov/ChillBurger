@@ -26,8 +26,8 @@ public class TelegramUser {
     private BotState state;
     private String phone;
     private String selectedLang;
-    private Integer contactMessageId;
-    private Integer cityMsgId;
     private String selectedCity;
-    private Integer mainSecBtnsId;
+    private Integer categoryId;
+    @Column(columnDefinition = "integer default 1")
+    private Integer amountCounter = 1;
 }

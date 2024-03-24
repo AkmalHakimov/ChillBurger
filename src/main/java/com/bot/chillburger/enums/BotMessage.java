@@ -1,6 +1,8 @@
 package com.bot.chillburger.enums;
 
+import lombok.Getter;
 
+@Getter
 public enum BotMessage {
 
     SHARE_YOUR_CONTACT_MSG("Iltimos ma'lumotingizni ulashing", "Please share your contact"),
@@ -28,22 +30,40 @@ public enum BotMessage {
                                           "tanlovi bo'yicha savollaringiz yoki shikoyatingizni " +
                                           "shu yerda qoldirishingiz mumkin, biz siz bilan albatta bog'lanamiz\uD83D\uDC47","BYD Song Champion EV " +
                                           "your questions or complaints about the contest " +
-                                          "you can leave it here, we will definitely contact you\uD83D\uDC47");
+                                          "you can leave it here, we will definitely contact you\uD83D\uDC47"),
+    MAIN_MENU_MSG("Buyurtmangizni " +
+            "mustaqil olib keting \uD83D\uDE4B\u200D♂\uFE0F yoki yetkazish" +
+            " xizmatini tanlang \uD83D\uDE99","Pick up" +
+            " your order yourself \uD83D\uDE4B\u200D♂\uFE0F or choose a delivery " +
+            "service \uD83D\uDE99"),
+    MAIN_MENU_DELIVERY_BTN_MSG("Yetkazish","Delivery"),
+    MAIN_MENU_DELIVERY_MSG("Buyurtmangizni qaerga yetkazish kerak? " +
+            "Lokatsiyani yoki saqlangan manzilni jo‘nating va biz sizga eng" +
+            " yaqin joylashgan filialni aniqlaymiz \uD83C\uDF55 \uD83D\uDCCD","" +
+            "Where should your order be delivered? Submit your location or saved address and we'll" +
+            " find the branch closest to you \uD83C\uDF55 \uD83D\uDCCD"),
+    MAIN_MENU_TAKE_AWAY_BTN_MSG("Olib ketish","Take away"),
+    BACK_BTN_MSG("Orqaga","Back"),
+    FIND_NEAR_BRANCH_BTN_MSG("Eng yaqin filialni aniqlash","Identify the nearest branch"),
+    NOT_FOUND_BRANCH_MSG("❌ Filial texnik sabablarga koʻra ishlamayapti yoki manzilingiz yetkazib berish hududida emas \uD83E\uDD72 \n" +
+            "Uzr soʻraymiz.","❌ The branch is not working due to technical reasons or your address is not valid\n" +
+            "We apologize."),
+    MAIN_MENU_TAKE_AWAY_MSG("Buyurtmani qaerdan olib ketish siz uchun qulay? Lokatsiyani yoki saqlangan manzilni jo‘nating va biz" +
+            " sizga eng yaqin joylashgan filialni" +
+            " aniqlaymiz \uD83C\uDF55 \uD83D\uDCCD","Where is convenient for you to pick up the order? Submit your location or saved address " +
+            "and we'll find the branch closest to you \uD83C\uDF55 \uD83D\uDCCD"),
+    BELISSIMO_BUKHARA("Belissimo Buxoro","Belissimo Bukhara"),
+    INTERACTIVE_MENU_MSG(" sizni ko‘rganimizdan xursandmiz! Bugun nima buyurtma qilasiz? \uD83C\uDF55","" +
+            "we are glad to see you! What will you order today? \uD83C\uDF55"),
+    BASKET_BTN_MSG("Savat","Basket"),
+    SELECT_SIZE_AND_MODIFICATOR("Kattaligi va modifikatorni tanlang:","Choose size and modifier: "),
+    ADD_TO_BASKET_BTN_MSG("Savatga qo'shish","Add to basket");
 
-
-    private String textUzb;
-    private String textEng;
+    private final String textUzb;
+    private final String textEng;
 
     BotMessage(String textUzb, String textEng) {
         this.textUzb = textUzb;
         this.textEng = textEng;
-    }
-
-    public String getTextUzb() {
-        return textUzb;
-    }
-
-    public String getTextEng() {
-        return textEng;
     }
 }

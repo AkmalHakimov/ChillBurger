@@ -12,4 +12,5 @@ public interface TelegramUserRepo extends JpaRepository<TelegramUser, UUID> {
 
 
     TelegramUser findByChatId(Long chatId);
+
 }
