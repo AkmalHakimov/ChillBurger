@@ -57,7 +57,14 @@ public enum BotMessage {
             "we are glad to see you! What will you order today? \uD83C\uDF55"),
     BASKET_BTN_MSG("Savat","Basket"),
     SELECT_SIZE_AND_MODIFICATOR("Kattaligi va modifikatorni tanlang:","Choose size and modifier: "),
-    ADD_TO_BASKET_BTN_MSG("Savatga qo'shish","Add to basket");
+    ADD_TO_BASKET_BTN_MSG("Savatga qo'shish","Add to basket"),
+    ADDED_TO_BASKET_MSG(" mahsuloti savatga muvaffaqiyatli qo‘shildi \uD83D\uDCE5 Yana biror " +
+            "nima buyurtma qilamizmi?"," product has been successfully" +
+            " added to the cart \uD83D\uDCE5 Would you like to order something else?"),
+    CONTINUE_BTN_MSG("Davom etish","Continue"),
+    CLEAN_BTN_MSG("Tozalash","Clean"),
+    TOTAL_AMOUNT_MSG("Umumiy narx: ","Total: "),
+    GO_TO_MENU("Menyuga o'tish","Menu");
 
     private final String textUzb;
     private final String textEng;

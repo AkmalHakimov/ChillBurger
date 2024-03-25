@@ -13,5 +13,8 @@ public enum BotCallBackData {
     HUGE,
     MINUS,
     PLUS,
-    ADD_TO_BASKET
+    ADD_TO_BASKET,
+    BACK_DATA,
+    EDIT_ORDER,
+    GO_TO_MENU
 }
