@@ -6,6 +6,7 @@ import com.bot.chillburger.entity.Product;
 import com.bot.chillburger.enums.*;
 import com.bot.chillburger.entity.TelegramUser;
 import com.bot.chillburger.repository.CategoryRepo;
+import com.bot.chillburger.repository.OrderProductRepo;
 import com.bot.chillburger.repository.ProductRepo;
 import com.bot.chillburger.repository.TelegramUserRepo;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,8 @@ import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageCaption;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
@@ -43,14 +46,16 @@ public class AppBot extends TelegramLongPollingBot {
     private final TelegramUserRepo telegramUserRepo;
     private final CategoryRepo categoryRepo;
     private final ProductRepo productRepo;
+    private final OrderProductRepo orderProductRepo;
 
 
     @SneakyThrows
     @Autowired
-    public AppBot(TelegramBotsApi api, TelegramUserRepo telegramUserRepo, CategoryRepo categoryRepo,ProductRepo productRepo) {
+    public AppBot(TelegramBotsApi api, TelegramUserRepo telegramUserRepo, CategoryRepo categoryRepo, ProductRepo productRepo, OrderProductRepo orderProductRepo) {
         this.telegramUserRepo = telegramUserRepo;
         this.categoryRepo = categoryRepo;
         this.productRepo = productRepo;
+        this.orderProductRepo = orderProductRepo;
         api.registerBot(this);
     }
 
@@ -335,8 +340,74 @@ public class AppBot extends TelegramLongPollingBot {
                     execute(sendMessage);
                     sendSelectSectionMsg(chatId);
                 }
+            }else if(telegramUser.getState().equals(BotState.ADD_TO_BASKET)){
+                if(data.equals(BotCallBackData.MEDIUM.toString())){
+                    telegramUser.setCurrentProductSize(ProductSize.MEDIUM);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.SMALL.toString())){
+                    telegramUser.setCurrentProductSize(ProductSize.SMALL);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.HUGE.toString())){
+                    telegramUser.setCurrentProductSize(ProductSize.HUGE);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.THIN.toString())){
+                    telegramUser.setCurrentProductType(ProductType.THIN);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.THICK.toString())){
+                    telegramUser.setCurrentProductType(ProductType.THICK);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.HOT_DOG_BORT.toString())){
+                    telegramUser.setCurrentProductType(ProductType.HOT_DOG_BORT);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.PLUS.toString())){
+                    telegramUser.setAmountCounter(telegramUser.getAmountCounter()+1);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.MINUS.toString()) && telegramUser.getAmountCounter()>1){
+                    telegramUser.setAmountCounter(telegramUser.getAmountCounter()-1);
+                    saveTelegramUserToDb();
+                    editCaption(chatId);
+                    editMarkup(chatId);
+                }else if(data.equals(BotCallBackData.ADD_TO_BASKET.toString())){
+                    orderProductRepo.save(OrderProduct.builder()
+                            .amount(telegramUser.getAmountCounter())
+                            .productType(telegramUser.getCurrentProductType())
+                            .productSize(telegramUser.getCurrentProductSize())
+                            .product(productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow())
+                            .build());
+
+                }
             }
         }
+    }
+
+    private void editMarkup(Long chatId) throws TelegramApiException {
+        EditMessageReplyMarkup editMessageReplyMarkup = new EditMessageReplyMarkup();
+        editMessageReplyMarkup.setChatId(chatId);
+        editMessageReplyMarkup.setMessageId(telegramUser.getAddBasketMsgId());
+        editMessageReplyMarkup.setReplyMarkup(getAddBasketInlineKeyboard(chatId));
+        execute(editMessageReplyMarkup);
+    }
+
+    private void editCaption(Long chatId) throws TelegramApiException {
+        EditMessageCaption editMessageCaption = new EditMessageCaption();
+        editMessageCaption.setMessageId(telegramUser.getAddBasketMsgId());
+        editMessageCaption.setChatId(chatId);
+        editMessageCaption.setCaption(getCaption(productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow()));
+        execute(editMessageCaption);
     }
 
     private void addBasketSection(Product product, Long chatId) throws TelegramApiException {
@@ -350,11 +421,19 @@ public class AppBot extends TelegramLongPollingBot {
         SendPhoto sendPhoto = new SendPhoto();
         sendPhoto.setChatId(chatId);
         sendPhoto.setPhoto(new InputFile(product.getPhotoId()));
-        sendPhoto.setCaption(product.getUzName() + ProductSize.SMALL + "\n" +
-                "Hamir turi: " + ProductType.THIN + "\n" +
-                (product.getDescription()!=null? product.getDescription() : " ") + "\n" +
-                "Narx: " + product.getPrice() +     " so'm");
+        sendPhoto.setCaption(getCaption(product));
 //        sendPhoto.setCaption("123");
+        InlineKeyboardMarkup inlineKeyboardMarkup = getAddBasketInlineKeyboard(chatId);
+        sendPhoto.setReplyMarkup(inlineKeyboardMarkup);
+
+        Message execute = execute(sendPhoto);
+        telegramUser.setState(BotState.ADD_TO_BASKET);
+        telegramUser.setAddBasketMsgId(execute.getMessageId());
+        telegramUser.setCurrentProductId(product.getId());
+        saveTelegramUserToDb();
+    }
+
+    private InlineKeyboardMarkup getAddBasketInlineKeyboard(Long chatId) {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         List<InlineKeyboardButton> row = new ArrayList<>();
@@ -411,11 +490,18 @@ public class AppBot extends TelegramLongPollingBot {
         rows.add(row2);
         rows.add(row3);
         inlineKeyboardMarkup.setKeyboard(rows);
-        sendPhoto.setReplyMarkup(inlineKeyboardMarkup);
+        return inlineKeyboardMarkup;
+    }
 
-        execute(sendPhoto);
-        telegramUser.setState(BotState.ADD_TO_BASKET);
-        saveTelegramUserToDb();
+    private String getCaption(Product product) {
+        return product.getUzName() + ": " + telegramUser.getCurrentProductSize().name() + "\n" +
+                "Hamir turi: " + telegramUser.getCurrentProductType().name() + "\n" +
+                (product.getDescription() != null ? product.getDescription() : " ") + "\n" +
+                "Narx: " + calculateBalance(product.getPrice()) + " so'm";
+    }
+
+    private Integer calculateBalance(Integer price) {
+        return telegramUser.getAmountCounter()*price;
     }
 
     private boolean checkStateForBackBtn(String text) {

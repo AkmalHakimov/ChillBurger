@@ -26,4 +26,5 @@ public class Product {
     private String photoId;
 //    @Column(name = "desc")
     private String description;
+
 }

@@ -1,6 +1,8 @@
 package com.bot.chillburger.entity;
 
 import com.bot.chillburger.enums.BotState;
+import com.bot.chillburger.enums.ProductSize;
+import com.bot.chillburger.enums.ProductType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +30,26 @@ public class TelegramUser {
     private String selectedLang;
     private String selectedCity;
     private Integer categoryId;
-    @Column(columnDefinition = "integer default 1")
+//    @Column(columnDefinition = "integer default 1")
     private Integer amountCounter = 1;
+    private Integer addBasketMsgId;
+    @Enumerated(EnumType.STRING)
+    private ProductSize currentProductSize;
+    @Enumerated(EnumType.STRING)
+    private ProductType currentProductType;
+    private Integer currentProductId;
+
+    @PrePersist
+    public void prePersist() {
+        if (amountCounter == null) {
+            amountCounter = 1; // Set default value
+        }
+        if (currentProductSize == null) {
+            currentProductSize = ProductSize.SMALL; // Set default value
+        }
+        if (currentProductType == null) {
+            currentProductType = ProductType.THIN; // Set default value
+        }
+    }
 }
+
