@@ -26,4 +26,6 @@ public class OrderProduct {
     @ManyToOne
     private Order order;
     private Integer amount;
+    @ManyToOne
+    private TelegramUser telegramUser;
 }

@@ -65,30 +65,36 @@ public class AppBot extends TelegramLongPollingBot {
         if (update.hasMessage()) {
             Message message = update.getMessage();
             Long chatId = message.getChatId();
+            boolean checkIfUserAvailableInDb = telegramUserRepo.findByChatId(chatId) == null;
             telegramUser = findUserByChatId(chatId);
             if (message.hasText()) {
                 String text = message.getText();
                 if (text.equals("/start")) {
-                    SendMessage sendMessage = new SendMessage();
-                    sendMessage.setChatId(telegramUser.getChatId());
-                    sendMessage.setText("Выберите язык:");
-                    InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-                    List<InlineKeyboardButton> row = new ArrayList<>();
-                    List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-                    InlineKeyboardButton button1 = new InlineKeyboardButton();
-                    button1.setText("Uzbek");
-                    button1.setCallbackData(BotCallBackData.SET_LANG_UZB.toString());
-                    row.add(button1);
-                    InlineKeyboardButton button2 = new InlineKeyboardButton();
-                    button2.setText("English");
-                    button2.setCallbackData(BotCallBackData.SET_LANG_ENG.toString());
-                    row.add(button2);
-                    rows.add(row);
-                    inlineKeyboardMarkup.setKeyboard(rows);
-                    sendMessage.setReplyMarkup(inlineKeyboardMarkup);
-                    telegramUser.setState(BotState.CHOOSE_LANG);
-                    saveTelegramUserToDb();
-                    execute(sendMessage);
+                    if(checkIfUserAvailableInDb){
+                        SendMessage sendMessage = new SendMessage();
+                        sendMessage.setChatId(telegramUser.getChatId());
+                        sendMessage.setText("Выберите язык:");
+                        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+                        List<InlineKeyboardButton> row = new ArrayList<>();
+                        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+                        InlineKeyboardButton button1 = new InlineKeyboardButton();
+                        button1.setText("Uzbek");
+                        button1.setCallbackData(BotCallBackData.SET_LANG_UZB.toString());
+                        row.add(button1);
+                        InlineKeyboardButton button2 = new InlineKeyboardButton();
+                        button2.setText("English");
+                        button2.setCallbackData(BotCallBackData.SET_LANG_ENG.toString());
+                        row.add(button2);
+                        rows.add(row);
+                        inlineKeyboardMarkup.setKeyboard(rows);
+                        sendMessage.setReplyMarkup(inlineKeyboardMarkup);
+                        telegramUser.setState(BotState.CHOOSE_LANG);
+                        saveTelegramUserToDb();
+                        execute(sendMessage);
+                    }else {
+                        menuButtons(chatId);
+                    }
+
                 } else if (telegramUser.getState().equals(BotState.SELECT_CITY)) {
                     telegramUser.setSelectedCity(text);
                     menuButtons(chatId);
@@ -217,7 +223,7 @@ public class AppBot extends TelegramLongPollingBot {
                         menuDeliverySection(chatId);
                         telegramUser.setState(BotState.MENU_SELECT_DELIVERY_TYPE);
                         saveTelegramUserToDb();
-                    } else if (text.equals(ShowBotMessage(BotMessage.BASKET_BTN_MSG))) {
+                    } else if (text.equals(ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll(findUserByChatId(chatId).getId()) + ")")) {
                         ShowBasket(chatId);
                     } else if (category != null) {
                         createProductSectionByCategory(category, chatId);
@@ -228,7 +234,7 @@ public class AppBot extends TelegramLongPollingBot {
                         interactiveMenuSection(chatId, message);
                         telegramUser.setState(BotState.SELECT_INTERACTIVE_MENU);
                         saveTelegramUserToDb();
-                    } else if (text.equals(ShowBotMessage(BotMessage.BASKET_BTN_MSG))) {
+                    } else if (text.equals(ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll(findUserByChatId(chatId).getId()) + ")")) {
                         ShowBasket(chatId);
                     } else if (product != null) {
                         addBasketSection(product, chatId);
@@ -391,11 +397,13 @@ public class AppBot extends TelegramLongPollingBot {
                                 .productType(telegramUser.getCurrentProductType())
                                 .productSize(telegramUser.getCurrentProductSize())
                                 .product(productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow())
+                                .telegramUser(findUserByChatId(chatId))
                                 .build());
                     } else orderProductRepo.save(OrderProduct.builder()
                             .amount(telegramUser.getAmountCounter())
                             .productType(telegramUser.getCurrentProductType())
                             .productSize(telegramUser.getCurrentProductSize())
+                            .telegramUser(findUserByChatId(chatId))
                             .product(productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow())
                             .build());
                     SendMessage sendMessage = new SendMessage(chatId.toString(), productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getEngName() + ShowBotMessage(BotMessage.ADDED_TO_BASKET_MSG));
@@ -412,26 +420,36 @@ public class AppBot extends TelegramLongPollingBot {
                     telegramUser.setCurrentProductSize(ProductSize.SMALL);
                     telegramUser.setCurrentProductType(ProductType.THIN);
                     saveTelegramUserToDb();
+                }else if(telegramUser.getState().equals(BotState.SHOW_BASKET_STATE)){
+                    if(data.equals(ShowBotMessage(BotMessage.BACK_BTN_MSG))){
+
+                    }
                 }
             }
         }
     }
 
     private void ShowBasket(Long chatId) throws TelegramApiException {
-        SendMessage sendMessage = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.BASKET_BTN_MSG));
+        if(orderProductRepo.countAll(telegramUser.getId())==0){
+            SendMessage sendMessage = new SendMessage(chatId.toString(),"Your Basket is Empty!");
+            execute(sendMessage);
+            menuButtons(chatId);
+            return;
+        }
+        SendMessage sendMessage = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll(findUserByChatId(chatId).getId()) + ")");
         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> rows = new ArrayList<>();
         KeyboardRow row = new KeyboardRow();
         KeyboardButton button = new KeyboardButton();
         button.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
         KeyboardButton button1 = new KeyboardButton();
-        button1.setText(ShowBotMessage(BotMessage.CONTACT_BTN_MSG));
+        button1.setText(ShowBotMessage(BotMessage.CONTINUE_BTN_MSG));
         row.add(button);
         row.add(button1);
 
         KeyboardRow row1 = new KeyboardRow();
         KeyboardButton button2 = new KeyboardButton();
-        button2.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
+        button2.setText(ShowBotMessage(BotMessage.CLEAN_BTN_MSG));
         row1.add(button2);
 
         rows.add(row);
@@ -444,7 +462,7 @@ public class AppBot extends TelegramLongPollingBot {
 
         SendMessage sendMessage1 = new SendMessage();
         sendMessage1.setChatId(chatId);
-        sendMessage1.setText(Objects.requireNonNull(returnShowBasketMsgAsString()));
+        sendMessage1.setText(Objects.requireNonNull(returnShowBasketMsgAsString(chatId)));
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows1 = new ArrayList<>();
         List<InlineKeyboardButton> row2 = new ArrayList<>();
@@ -471,6 +489,8 @@ public class AppBot extends TelegramLongPollingBot {
         sendMessage2.setReplyMarkup(inlineKeyboardMarkup1);
         sendMessage2.setParseMode(ParseMode.HTML);
         execute(sendMessage2);
+        telegramUser.setState(BotState.SHOW_BASKET_STATE);
+        saveTelegramUserToDb();
     }
 
     private Integer calculateTotalBalance() {
@@ -482,8 +502,8 @@ public class AppBot extends TelegramLongPollingBot {
         return s;
     }
 
-    private String returnShowBasketMsgAsString() {
-        List<OrderProduct> orderIdNullOrdersItems = orderProductRepo.getOrderIdNullOrdersItems();
+    private String returnShowBasketMsgAsString(Long chatId) {
+        List<OrderProduct> orderIdNullOrdersItems = orderProductRepo.getOrderIdNullOrdersItems(findUserByChatId(chatId).getId());
         String s = "";
         for (OrderProduct orderProduct : orderIdNullOrdersItems) {
             s += + orderProduct.getAmount() + " <b>x</b> " + orderProduct.getProduct().getEngName() + " " + orderProduct.getProductSize() +"\n";
@@ -632,7 +652,7 @@ public class AppBot extends TelegramLongPollingBot {
         KeyboardButton button = new KeyboardButton();
         KeyboardButton button1 = new KeyboardButton();
         button.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
-        button1.setText(ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll() + ")");
+        button1.setText(ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll(findUserByChatId(chatId).getId()) + ")");
         row.add(button);
         row.add(button1);
         rows.add(row);
@@ -679,7 +699,7 @@ public class AppBot extends TelegramLongPollingBot {
         KeyboardButton button = new KeyboardButton();
         KeyboardButton button1 = new KeyboardButton();
         button.setText(ShowBotMessage(BotMessage.BACK_BTN_MSG));
-        button1.setText(ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll() + ")");
+        button1.setText(ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll(findUserByChatId(chatId).getId()) + ")");
         row.add(button);
         row.add(button1);
         rows.add(row);
