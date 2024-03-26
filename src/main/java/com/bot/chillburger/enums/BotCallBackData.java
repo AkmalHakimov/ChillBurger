@@ -16,5 +16,8 @@ public enum BotCallBackData {
     ADD_TO_BASKET,
     BACK_DATA,
     EDIT_ORDER,
-    GO_TO_MENU
+    GO_TO_MENU,
+    EDIT_MINUS,
+    EDIT_PLUS,
+    REMOVE_ONE_ITEM
 }

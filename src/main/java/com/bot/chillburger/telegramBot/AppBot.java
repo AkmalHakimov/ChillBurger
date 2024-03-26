@@ -1,14 +1,8 @@
 package com.bot.chillburger.telegramBot;
 
-import com.bot.chillburger.entity.Category;
-import com.bot.chillburger.entity.OrderProduct;
-import com.bot.chillburger.entity.Product;
+import com.bot.chillburger.entity.*;
 import com.bot.chillburger.enums.*;
-import com.bot.chillburger.entity.TelegramUser;
-import com.bot.chillburger.repository.CategoryRepo;
-import com.bot.chillburger.repository.OrderProductRepo;
-import com.bot.chillburger.repository.ProductRepo;
-import com.bot.chillburger.repository.TelegramUserRepo;
+import com.bot.chillburger.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +26,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import javax.swing.text.html.HTML;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -47,15 +42,17 @@ public class AppBot extends TelegramLongPollingBot {
     private final CategoryRepo categoryRepo;
     private final ProductRepo productRepo;
     private final OrderProductRepo orderProductRepo;
+    private final OrderRepo orderRepo;
 
 
     @SneakyThrows
     @Autowired
-    public AppBot(TelegramBotsApi api, TelegramUserRepo telegramUserRepo, CategoryRepo categoryRepo, ProductRepo productRepo, OrderProductRepo orderProductRepo) {
+    public AppBot(TelegramBotsApi api, TelegramUserRepo telegramUserRepo, CategoryRepo categoryRepo, ProductRepo productRepo, OrderProductRepo orderProductRepo,OrderRepo orderRepo) {
         this.telegramUserRepo = telegramUserRepo;
         this.categoryRepo = categoryRepo;
         this.productRepo = productRepo;
         this.orderProductRepo = orderProductRepo;
+        this.orderRepo = orderRepo;
         api.registerBot(this);
     }
 
@@ -70,7 +67,7 @@ public class AppBot extends TelegramLongPollingBot {
             if (message.hasText()) {
                 String text = message.getText();
                 if (text.equals("/start")) {
-                    if(checkIfUserAvailableInDb){
+                    if (checkIfUserAvailableInDb) {
                         SendMessage sendMessage = new SendMessage();
                         sendMessage.setChatId(telegramUser.getChatId());
                         sendMessage.setText("Выберите язык:");
@@ -91,7 +88,7 @@ public class AppBot extends TelegramLongPollingBot {
                         telegramUser.setState(BotState.CHOOSE_LANG);
                         saveTelegramUserToDb();
                         execute(sendMessage);
-                    }else {
+                    } else {
                         menuButtons(chatId);
                     }
 
@@ -238,6 +235,27 @@ public class AppBot extends TelegramLongPollingBot {
                         ShowBasket(chatId);
                     } else if (product != null) {
                         addBasketSection(product, chatId);
+                    }
+                }else if(telegramUser.getState().equals(BotState.SHOW_BASKET_STATE)){
+                    if(text.equals(ShowBotMessage(BotMessage.BACK_BTN_MSG))){
+                        interactiveMenuSection(chatId,message);
+                    }else if(text.equals(ShowBotMessage(BotMessage.CLEAN_BTN_MSG))){
+                        orderProductRepo.deleteRedundantOrderProducts(telegramUser.getId());
+                        interactiveMenuSection(chatId,message);
+                    }else if(text.equals(ShowBotMessage(BotMessage.CONTINUE_BTN_MSG))){
+                        SendMessage sendMessage = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.CONFIRMED_MSG));
+                        Order order = Order.builder()
+                                .orderedTime(LocalDateTime.now())
+                                .build();
+                        orderRepo.save(order);
+
+                        List<OrderProduct> all = orderProductRepo.findAll();
+                        for (OrderProduct orderProduct : all) {
+                            orderProduct.setOrder(order);
+                            orderProductRepo.save(orderProduct);
+                        }
+                        execute(sendMessage);
+                        interactiveMenuSection(chatId,message);
                     }
                 }
             } else if (message.hasContact() && telegramUser.getState().equals(BotState.SHARE_CONTACT)) {
@@ -413,30 +431,30 @@ public class AppBot extends TelegramLongPollingBot {
                     telegramUser.setCurrentProductSize(ProductSize.SMALL);
                     telegramUser.setCurrentProductType(ProductType.THIN);
                     saveTelegramUserToDb();
-                }else if(data.equals(BotCallBackData.BACK_DATA.toString())){
+                } else if (data.equals(BotCallBackData.BACK_DATA.toString())) {
                     deleteProductMsg(chatId);
-                    createProductSectionByCategory(categoryRepo.findById(telegramUser.getCategoryId()).orElseThrow(),chatId);
+                    createProductSectionByCategory(categoryRepo.findById(telegramUser.getCategoryId()).orElseThrow(), chatId);
                     telegramUser.setAmountCounter(1);
                     telegramUser.setCurrentProductSize(ProductSize.SMALL);
                     telegramUser.setCurrentProductType(ProductType.THIN);
                     saveTelegramUserToDb();
-                }else if(telegramUser.getState().equals(BotState.SHOW_BASKET_STATE)){
-                    if(data.equals(ShowBotMessage(BotMessage.BACK_BTN_MSG))){
-
-                    }
+                }
+            } else if (telegramUser.getState().equals(BotState.SHOW_BASKET_STATE)) {
+               if (data.equals(BotCallBackData.GO_TO_MENU.toString())) {
+                    menuButtons(chatId);
                 }
             }
         }
     }
 
     private void ShowBasket(Long chatId) throws TelegramApiException {
-        if(orderProductRepo.countAll(telegramUser.getId())==0){
-            SendMessage sendMessage = new SendMessage(chatId.toString(),"Your Basket is Empty!");
+        if (orderProductRepo.countAll(telegramUser.getId()) == 0) {
+            SendMessage sendMessage = new SendMessage(chatId.toString(), "Your Basket is Empty!");
             execute(sendMessage);
             menuButtons(chatId);
             return;
         }
-        SendMessage sendMessage = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.BASKET_BTN_MSG) + "(" + orderProductRepo.countAll(findUserByChatId(chatId).getId()) + ")");
+        SendMessage sendMessage = new SendMessage(chatId.toString(), ShowBotMessage(BotMessage.BASKET_BTN_MSG) + ":");
         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> rows = new ArrayList<>();
         KeyboardRow row = new KeyboardRow();
@@ -463,20 +481,10 @@ public class AppBot extends TelegramLongPollingBot {
         SendMessage sendMessage1 = new SendMessage();
         sendMessage1.setChatId(chatId);
         sendMessage1.setText(Objects.requireNonNull(returnShowBasketMsgAsString(chatId)));
-        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-        List<List<InlineKeyboardButton>> rows1 = new ArrayList<>();
-        List<InlineKeyboardButton> row2 = new ArrayList<>();
-        InlineKeyboardButton button3 = new InlineKeyboardButton();
-        button3.setText("change");
-        button3.setCallbackData(BotCallBackData.EDIT_ORDER.name());
-        row2.add(button3);
-        rows1.add(row2);
-        inlineKeyboardMarkup.setKeyboard(rows1);
-        sendMessage1.setReplyMarkup(inlineKeyboardMarkup);
         sendMessage1.setParseMode(ParseMode.HTML);
         execute(sendMessage1);
 
-        SendMessage sendMessage2 = new SendMessage(chatId.toString(), "<b>" + ShowBotMessage(BotMessage.TOTAL_AMOUNT_MSG) + "</b>" +  calculateTotalBalance().toString()  +" so'm");
+        SendMessage sendMessage2 = new SendMessage(chatId.toString(), "<b>" + ShowBotMessage(BotMessage.TOTAL_AMOUNT_MSG) + "</b>" + calculateTotalBalance().toString() + " so'm");
         InlineKeyboardMarkup inlineKeyboardMarkup1 = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> rows2 = new ArrayList<>();
         List<InlineKeyboardButton> row3 = new ArrayList<>();
@@ -497,7 +505,7 @@ public class AppBot extends TelegramLongPollingBot {
         List<OrderProduct> all = orderProductRepo.findAll();
         int s = 0;
         for (OrderProduct orderProduct : all) {
-            s += orderProduct.getAmount()*orderProduct.getProduct().getPrice();
+            s += orderProduct.getAmount() * orderProduct.getProduct().getPrice();
         }
         return s;
     }
@@ -506,7 +514,7 @@ public class AppBot extends TelegramLongPollingBot {
         List<OrderProduct> orderIdNullOrdersItems = orderProductRepo.getOrderIdNullOrdersItems(findUserByChatId(chatId).getId());
         String s = "";
         for (OrderProduct orderProduct : orderIdNullOrdersItems) {
-            s += + orderProduct.getAmount() + " <b>x</b> " + orderProduct.getProduct().getEngName() + " " + orderProduct.getProductSize() +"\n";
+            s += +orderProduct.getAmount() + " <b>x</b> " + orderProduct.getProduct().getEngName() + " " + orderProduct.getProductSize() + "\n";
         }
 
         return s;

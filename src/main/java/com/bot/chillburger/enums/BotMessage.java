@@ -64,7 +64,8 @@ public enum BotMessage {
     CONTINUE_BTN_MSG("Davom etish","Continue"),
     CLEAN_BTN_MSG("Tozalash","Clean"),
     TOTAL_AMOUNT_MSG("Umumiy narx: ","Total: "),
-    GO_TO_MENU("Menyuga o'tish","Menu");
+    GO_TO_MENU("Menyuga o'tish","Menu"),
+    CONFIRMED_MSG("Buyurtmangiz qabul qilindi✅","Your order is confirmed✅");
 
     private final String textUzb;
     private final String textEng;
