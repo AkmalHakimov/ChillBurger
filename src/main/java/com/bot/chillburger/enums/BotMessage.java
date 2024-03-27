@@ -5,16 +5,15 @@ import lombok.Getter;
 @Getter
 public enum BotMessage {
 
-    SHARE_YOUR_CONTACT_MSG("Iltimos ma'lumotingizni ulashing", "Please share your contact"),
-    SHARE_YOUR_CONTACT_BTN_MSG("Kontakt yuborish", "Share contact"),
+    SHARE_YOUR_CONTACT_MSG("Telefon raqamingizni quyidagi tarzda \uD83D\uDC47 yuboring yoki kiriting:\n" +
+            "+998 ** *** ****", "Please share your contact"),
+    SHARE_YOUR_CONTACT_BTN_MSG("\uD83D\uDCF1Mening raqamim", "Share contact"),
     CHOOSE_CITY_MSG("Iltimos, siz yashayotgan shaharni tanlang 👇", "Please, choose your city"),
     SELECT_MAIN_SECTION_BTN_MSG("Bo'limni tanlang:", "choose the section:"),
-    MENU_BTN_MSG("Menyu", "Menu"),
-    BYD_BTN_MSG("BYD yutib oling", "Win a BYD"),
-    ORDERS_BTN_MSG("Mening buyurtmalarim", "My orders"),
-    BRANCH_BTN_MSG("Filiallarimiz", "Our branches"),
-    CONTACT_BTN_MSG("Qayta aloqa", "Contact"),
-    SETTINGS_BTN_MSG("Sozlamalar", "Settings"),
+    MENU_BTN_MSG("\uD83C\uDF55 Menyu", "\uD83C\uDF55 Menu"),
+    BYD_BTN_MSG("\uD83C\uDF89 BYD yutib oling", "Win a BYD"),
+    ORDERS_BTN_MSG("\uD83D\uDCD6 Mening buyurtmalarim", "My orders"),
+    CONTACT_BTN_MSG("☎\uFE0F Qayta aloqa", "Contact"),
     BYD_SECTION_MSG("50-filial ochilishi munosabati bilan o'tkazilgan BYD Song Champion" +
             " aksiyasi yakunlandi, bosh sovrin g'olibi 19-mart kuni Oybek filialida aniqlanadi.", "" +
             "The BYD Song Champion promotion held in connection with the opening of the 50th " +
@@ -36,15 +35,15 @@ public enum BotMessage {
             " xizmatini tanlang \uD83D\uDE99","Pick up" +
             " your order yourself \uD83D\uDE4B\u200D♂\uFE0F or choose a delivery " +
             "service \uD83D\uDE99"),
-    MAIN_MENU_DELIVERY_BTN_MSG("Yetkazish","Delivery"),
+    MAIN_MENU_DELIVERY_BTN_MSG("\uD83D\uDE99 Yetkazish","Delivery"),
     MAIN_MENU_DELIVERY_MSG("Buyurtmangizni qaerga yetkazish kerak? " +
             "Lokatsiyani yoki saqlangan manzilni jo‘nating va biz sizga eng" +
             " yaqin joylashgan filialni aniqlaymiz \uD83C\uDF55 \uD83D\uDCCD","" +
             "Where should your order be delivered? Submit your location or saved address and we'll" +
             " find the branch closest to you \uD83C\uDF55 \uD83D\uDCCD"),
-    MAIN_MENU_TAKE_AWAY_BTN_MSG("Olib ketish","Take away"),
-    BACK_BTN_MSG("Orqaga","Back"),
-    FIND_NEAR_BRANCH_BTN_MSG("Eng yaqin filialni aniqlash","Identify the nearest branch"),
+    MAIN_MENU_TAKE_AWAY_BTN_MSG("\uD83C\uDFC3 Olib ketish","Take away"),
+    BACK_BTN_MSG("⬅\uFE0F Orqaga","Back"),
+    FIND_NEAR_BRANCH_BTN_MSG("\uD83D\uDCCD Eng yaqin filialni aniqlash","Identify the nearest branch"),
     NOT_FOUND_BRANCH_MSG("❌ Filial texnik sabablarga koʻra ishlamayapti yoki manzilingiz yetkazib berish hududida emas \uD83E\uDD72 \n" +
             "Uzr soʻraymiz.","❌ The branch is not working due to technical reasons or your address is not valid\n" +
             "We apologize."),
@@ -55,17 +54,23 @@ public enum BotMessage {
     BELISSIMO_BUKHARA("Belissimo Buxoro","Belissimo Bukhara"),
     INTERACTIVE_MENU_MSG(" sizni ko‘rganimizdan xursandmiz! Bugun nima buyurtma qilasiz? \uD83C\uDF55","" +
             "we are glad to see you! What will you order today? \uD83C\uDF55"),
-    BASKET_BTN_MSG("Savat","Basket"),
+    BASKET_BTN_MSG("\uD83D\uDCE5 Savat","Basket"),
     SELECT_SIZE_AND_MODIFICATOR("Kattaligi va modifikatorni tanlang:","Choose size and modifier: "),
-    ADD_TO_BASKET_BTN_MSG("Savatga qo'shish","Add to basket"),
+    ADD_TO_BASKET_BTN_MSG("Savatga qo'shish \uD83D\uDED2","Add to basket"),
     ADDED_TO_BASKET_MSG(" mahsuloti savatga muvaffaqiyatli qo‘shildi \uD83D\uDCE5 Yana biror " +
             "nima buyurtma qilamizmi?"," product has been successfully" +
             " added to the cart \uD83D\uDCE5 Would you like to order something else?"),
-    CONTINUE_BTN_MSG("Davom etish","Continue"),
-    CLEAN_BTN_MSG("Tozalash","Clean"),
+    CONTINUE_BTN_MSG("Davom etish ➡\uFE0F","Continue"),
+    CLEAN_BTN_MSG("\uD83D\uDD04 Tozalash","Clean"),
     TOTAL_AMOUNT_MSG("Umumiy narx: ","Total: "),
-    GO_TO_MENU("Menyuga o'tish","Menu"),
-    CONFIRMED_MSG("Buyurtmangiz qabul qilindi✅","Your order is confirmed✅");
+    GO_TO_MENU("\uD83C\uDF55 Menyuga o'tish","Menu"),
+    CONFIRMED_MSG("Buyurtmangiz qabul qilindi✅","Your order is confirmed✅"),
+    CONTACT_MSG("\uD83D\uDCF2 Yagona call-markaz: 1174 yoki (91) 203-66-66","rucha"),
+    THIN("Yupqa","Тонкий"),
+    THICK("Qalin","Толстый"),
+    HOT_DOG_BURGER("Hot-dog bort","Хот-дог борт");
+
+
 
     private final String textUzb;
     private final String textEng;
