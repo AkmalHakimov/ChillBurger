@@ -9,10 +9,10 @@ public enum ProductSize {
     HUGE("Katta","Bigger");
 
     private String uzLang;
-    private String engLang;
+    private String ruLang;
 
-    ProductSize(String uzLang, String engLang) {
+    ProductSize(String uzLang, String ruLang) {
         this.uzLang = uzLang;
-        this.engLang = engLang;
+        this.ruLang = ruLang;
     }
 }

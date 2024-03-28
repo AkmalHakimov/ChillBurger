@@ -79,7 +79,7 @@ public class AppBot extends TelegramLongPollingBot {
                         row.add(button1);
                         InlineKeyboardButton button2 = new InlineKeyboardButton();
                         button2.setText("\uD83C\uDDF7\uD83C\uDDFA Русский");
-                        button2.setCallbackData(BotCallBackData.SET_LANG_ENG.toString());
+                        button2.setCallbackData(BotCallBackData.SET_LANG_RU.toString());
                         row.add(button2);
                         rows.add(row);
                         inlineKeyboardMarkup.setKeyboard(rows);
@@ -219,7 +219,7 @@ public class AppBot extends TelegramLongPollingBot {
                         interactiveMenuSection(chatId, message);
                     }
                 } else if (telegramUser.getState().equals(BotState.SELECT_INTERACTIVE_MENU)) {
-                    Category category = categoryRepo.findByEngNameContainingOrUzNameContaining(text, text);
+                    Category category = categoryRepo.findByRuNameContainingOrUzNameContaining(text, text);
                     if (checkStateForBackBtn(text)) {
                         menuDeliverySection(chatId);
                         telegramUser.setState(BotState.MENU_SELECT_DELIVERY_TYPE);
@@ -230,7 +230,7 @@ public class AppBot extends TelegramLongPollingBot {
                         createProductSectionByCategory(category, chatId);
                     }
                 } else if (telegramUser.getState().equals(BotState.ADD_PRODUCT_MENU)) {
-                    Product product = productRepo.findByEngNameContainingOrUzNameContaining(text, text);
+                    Product product = productRepo.findByRuNameContainingOrUzNameContaining(text, text);
                     if (checkStateForBackBtn(text)) {
                         interactiveMenuSection(chatId, message);
                         telegramUser.setState(BotState.SELECT_INTERACTIVE_MENU);
@@ -428,7 +428,9 @@ public class AppBot extends TelegramLongPollingBot {
                             .telegramUser(findUserByChatId(chatId))
                             .product(productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow())
                             .build());
-                    SendMessage sendMessage = new SendMessage(chatId.toString(), productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getEngName() + ShowBotMessage(BotMessage.ADDED_TO_BASKET_MSG));
+                    String msgText = telegramUser.getSelectedLang().equals("SET_LANG_UZB")? productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getUzName():productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getRuName() +
+                            ShowBotMessage(BotMessage.ADDED_TO_BASKET_MSG);
+                    SendMessage sendMessage = new SendMessage(chatId.toString(), msgText);
                     execute(sendMessage);
                     createProductSectionByCategory(categoryRepo.findById(telegramUser.getCategoryId()).orElseThrow(), chatId);
                     telegramUser.setAmountCounter(1);
@@ -453,7 +455,8 @@ public class AppBot extends TelegramLongPollingBot {
 
     private void showBasket(Long chatId) throws TelegramApiException {
         if (orderProductRepo.countAll(telegramUser.getId()) == 0) {
-            SendMessage sendMessage = new SendMessage(chatId.toString(), "Your Basket is Empty! ");
+            String x = telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.name())?"Sizning savatingiz boʻsh \uD83D\uDE15": "Ваша корзина ещё пуста \uD83D\uDE15";
+            SendMessage sendMessage = new SendMessage(chatId.toString(), x);
             execute(sendMessage);
             menuButtons(chatId);
             return;
@@ -518,7 +521,7 @@ public class AppBot extends TelegramLongPollingBot {
         List<OrderProduct> orderIdNullOrdersItems = orderProductRepo.getOrderIdNullOrdersItems(findUserByChatId(chatId).getId());
         String s = "";
         for (OrderProduct orderProduct : orderIdNullOrdersItems) {
-            s += +orderProduct.getAmount() + " <b>x</b> " + orderProduct.getProduct().getEngName() + " " + orderProduct.getProductSize() + "\n";
+            s += orderProduct.getAmount() + " <b>x</b> " + (telegramUser.getSelectedLang().equals("SET_LANG_UZB")? orderProduct.getProduct().getUzName() : orderProduct.getProduct().getRuName()) + " " + returnProductSizeText(orderProduct.getProductSize()) + "\n";
         }
 
         return s;
@@ -644,9 +647,9 @@ public class AppBot extends TelegramLongPollingBot {
                     "Hamir turi: " + returnProductTypeText(telegramUser.getCurrentProductType()) + "\n" +
                     "Narx: " + calculateBalance(product.getPrice()) + " so'm";
         }else {
-            return product.getUzName() + ": " + returnProductSizeText(telegramUser.getCurrentProductSize()) + "\n" +
-                    "Hamir turi: " + returnProductTypeText(telegramUser.getCurrentProductType()) + "\n" +
-                    "Narx: " + calculateBalance(product.getPrice()) + " so'm";
+            return product.getRuName() + ": " + returnProductSizeText(telegramUser.getCurrentProductSize()) + "\n" +
+                    "Тесто: " + returnProductTypeText(telegramUser.getCurrentProductType()) + "\n" +
+                    "Цена: " + calculateBalance(product.getPrice()) + " сум";
         }
     }
 
@@ -681,7 +684,7 @@ public class AppBot extends TelegramLongPollingBot {
     private void createProductSectionByCategory(Category category, Long chatId) throws TelegramApiException {
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
-        sendMessage.setText(telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? category.getUzName() + " ni tanlang" : "choose the " + category.getEngName());
+        sendMessage.setText(telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? category.getUzName() + " ni tanlang:" : "Выберите " + category.getRuName());
 
         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
         List<KeyboardRow> rows = new ArrayList<>();
@@ -772,11 +775,11 @@ public class AppBot extends TelegramLongPollingBot {
     }
 
     private String defineItsLangByCategory(Category category) {
-        return telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? category.getUzName() : category.getEngName();
+        return telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? category.getUzName() : category.getRuName();
     }
 
     private String defineItsLangByProduct(Product product) {
-        return telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? product.getUzName() : product.getEngName();
+        return telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString()) ? product.getUzName() : product.getRuName();
     }
 
     private void menuDeliverySection(Long chatId) throws TelegramApiException {
@@ -867,8 +870,8 @@ public class AppBot extends TelegramLongPollingBot {
     private String ShowBotMessage(BotMessage botMessage) {
         if (telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString())) {
             return botMessage.getTextUzb();
-        } else if (telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_ENG.toString())) {
-            return botMessage.getTextEng();
+        } else if (telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_RU.toString())) {
+            return botMessage.getTextRu();
         } else {
             return null;
         }

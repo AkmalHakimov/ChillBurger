@@ -9,10 +9,10 @@ public enum ProductType {
     HOT_DOG_BORT("Hot-dog bort","Hot-dog bort");
 
     private String uzLang;
-    private String engLang;
+    private String ruLang;
 
-    ProductType(String uzLang, String engLang) {
+    ProductType(String uzLang, String ruLang) {
         this.uzLang = uzLang;
-        this.engLang = engLang;
+        this.ruLang = ruLang;
     }
 }

@@ -16,5 +16,5 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private String uzName;
-    private String engName;
+    private String ruName;
 }

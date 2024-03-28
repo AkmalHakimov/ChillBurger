@@ -18,13 +18,11 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    private String engName;
+    private String ruName;
     private String uzName;
     private Integer price;
     @ManyToOne
     private Category category;
     private String photoId;
-//    @Column(name = "desc")
-    private String description;
 
 }

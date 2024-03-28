@@ -2,7 +2,7 @@ package com.bot.chillburger.enums;
 
 public enum BotCallBackData {
     SET_LANG_UZB,
-    SET_LANG_ENG,
+    SET_LANG_RU,
     MAIN_SECTION_CONTACT,
     MAIN_SECTION_CHANCE,
     THIN,
