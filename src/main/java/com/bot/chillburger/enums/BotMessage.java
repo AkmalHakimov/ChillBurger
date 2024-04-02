@@ -58,7 +58,14 @@ public enum BotMessage {
     CONTACT_MSG("\uD83D\uDCF2 Yagona call-markaz: 1174 yoki (91) 203-66-66","\uD83D\uDCF2 Единый call-центр: 1174 или (71) 203-66-66"),
     THIN("Yupqa","Тонкий"),
     THICK("Qalin","Толстый"),
-    HOT_DOG_BURGER("Hot-dog bort","Хот-дог борт");
+    HOT_DOG_BURGER("Hot-dog bort","Хот-дог борт"),
+    INTERACTIVE_LOCATION_MSG("<b>\" + \" Bellissimo Buxoro \" + \"</b> \\n\" +\n" +
+            "                \"<i>\" + \" \\uD83D\\uDCCD Mustaqillik koʻchasi, 1/1, Buxoro \" + \"</i> \\n\" +\n" +
+            "\uD83D\uDD53 11:00 - 04:30 ", "<b>Bellissimo Buxoro</b>\n" +
+            "<i>" + "\uD83D\uDCCD улица Мустакиллик, 1/1, Бухара </i> \n" +
+            "🕓 11:00 - 04:30"),
+    WEBPAGE_MSG("Yangi va qulay menyu orqali buyurtma bering \uD83D\uDC47\uD83D\uDE09","Закажите через новое удобное меню \uD83D\uDC47\uD83D\uDE09"),
+    WEBPAGE_BTN_MSG("\uD83E\uDD29 Interactive menyu","\uD83E\uDD29 Интерактивное меню");
 
 
 

@@ -592,13 +592,13 @@ public class AppBot extends TelegramLongPollingBot {
 
         List<InlineKeyboardButton> row1 = new ArrayList<>();
         InlineKeyboardButton button3 = new InlineKeyboardButton();
-        button3.setText("Yupqa");
+        button3.setText(ShowBotMessage(BotMessage.THIN));
         button3.setCallbackData(BotCallBackData.THIN.toString());
         InlineKeyboardButton button4 = new InlineKeyboardButton();
-        button4.setText("qalin");
+        button4.setText(ShowBotMessage(BotMessage.THICK));
         button4.setCallbackData(BotCallBackData.THICK.toString());
         InlineKeyboardButton button5 = new InlineKeyboardButton();
-        button5.setText("Hot-dog bort");
+            button5.setText(ShowBotMessage(BotMessage.HOT_DOG_BURGER));
         button5.setCallbackData(BotCallBackData.HOT_DOG_BORT.toString());
         row1.add(button3);
         row1.add(button4);
@@ -729,6 +729,25 @@ public class AppBot extends TelegramLongPollingBot {
     }
 
     private void interactiveMenuSection(Long chatId, Message message) throws TelegramApiException {
+        SendMessage sendMessage1 = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.INTERACTIVE_LOCATION_MSG));
+        sendMessage1.setParseMode(ParseMode.HTML);
+        execute(sendMessage1);
+
+        SendMessage sendMessage2 = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.WEBPAGE_MSG));
+
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<InlineKeyboardButton> rows2 = new ArrayList<>();
+        List<List<InlineKeyboardButton>> row2 = new ArrayList<>();
+        InlineKeyboardButton button3 = new InlineKeyboardButton();
+        button3.setText(ShowBotMessage(BotMessage.WEBPAGE_BTN_MSG));
+        button3.setCallbackData("123");
+
+        rows2.add(button3);
+        row2.add(rows2);
+        inlineKeyboardMarkup.setKeyboard(row2);
+        sendMessage2.setReplyMarkup(inlineKeyboardMarkup);
+        execute(sendMessage2);
+
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
         String fullName = message.getFrom().getFirstName();
