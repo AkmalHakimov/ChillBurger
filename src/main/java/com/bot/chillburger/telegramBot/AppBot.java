@@ -3,6 +3,7 @@ package com.bot.chillburger.telegramBot;
 import com.bot.chillburger.entity.*;
 import com.bot.chillburger.enums.*;
 import com.bot.chillburger.repository.*;
+import com.bot.chillburger.services.webhookService.WebhookService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +32,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-//@Component
+@Component
 @RequiredArgsConstructor
-public class AppBot extends TelegramLongPollingBot {
+public class AppBot {
 
     TelegramUser telegramUser = null;
     String photoId = "AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ";
@@ -43,21 +44,9 @@ public class AppBot extends TelegramLongPollingBot {
     private final ProductRepo productRepo;
     private final OrderProductRepo orderProductRepo;
     private final OrderRepo orderRepo;
-
-
-    @SneakyThrows
-    @Autowired
-    public AppBot(TelegramBotsApi api, TelegramUserRepo telegramUserRepo, CategoryRepo categoryRepo, ProductRepo productRepo, OrderProductRepo orderProductRepo,OrderRepo orderRepo) {
-        this.telegramUserRepo = telegramUserRepo;
-        this.categoryRepo = categoryRepo;
-        this.productRepo = productRepo;
-        this.orderProductRepo = orderProductRepo;
-        this.orderRepo = orderRepo;
-        api.registerBot(this);
-    }
+    private final WebhookService webhookService;
 
     @SneakyThrows
-    @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage()) {
             Message message = update.getMessage();
@@ -87,7 +76,7 @@ public class AppBot extends TelegramLongPollingBot {
                         sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                         telegramUser.setState(BotState.CHOOSE_LANG);
                         saveTelegramUserToDb();
-                        execute(sendMessage);
+                        webhookService.execute(sendMessage);
                     } else {
                         menuButtons(chatId);
                     }
@@ -128,7 +117,7 @@ public class AppBot extends TelegramLongPollingBot {
                         rows.add(row3);
                         inlineKeyboardMarkup.setKeyboard(rows);
                         sendMessage.setReplyMarkup(inlineKeyboardMarkup);
-                        execute(sendMessage);
+                        webhookService.execute(sendMessage);
                         telegramUser.setState(BotState.MAIN_SECTION);
                         saveTelegramUserToDb();
                         sendSelectSectionMsg(chatId);
@@ -140,13 +129,13 @@ public class AppBot extends TelegramLongPollingBot {
                         showBasket(chatId);
                     }else if(text.equals(ShowBotMessage(BotMessage.CONTACT_BTN_MSG))){
                         SendMessage sendMessage = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.CONTACT_MSG));
-                        execute(sendMessage);
+                        webhookService.execute(sendMessage);
                     }
                 } else if (telegramUser.getState().equals(BotState.CONTACT_ADMIN)) {
                     SendMessage sendMessage = new SendMessage();
                     sendMessage.setChatId(adminChatId);
                     sendMessage.setText(text);
-                    execute(sendMessage);
+                    webhookService.execute(sendMessage);
                     sendSelectSectionMsg(chatId);
                 } else if (telegramUser.getState().equals(BotState.MENU_SELECT_DELIVERY_TYPE)) {
                     if (checkStateForBackBtn(text)) {
@@ -172,7 +161,7 @@ public class AppBot extends TelegramLongPollingBot {
                         replyKeyboardMarkup.setSelective(true);
                         replyKeyboardMarkup.setResizeKeyboard(true);
                         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                        Message execute = execute(sendMessage);
+                        webhookService.execute(sendMessage);
                         telegramUser.setState(BotState.FIND_CLOSE_BRANCH);
                         saveTelegramUserToDb();
                     } else if (text.equals(ShowBotMessage(BotMessage.MAIN_MENU_TAKE_AWAY_BTN_MSG))) {
@@ -199,7 +188,7 @@ public class AppBot extends TelegramLongPollingBot {
                         replyKeyboardMarkup.setSelective(true);
                         replyKeyboardMarkup.setResizeKeyboard(true);
                         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                        execute(sendMessage);
+                        webhookService.execute(sendMessage);
                         telegramUser.setState(BotState.TAKE_AWAY_SELECT_TYPE);
                         saveTelegramUserToDb();
                     }
@@ -259,7 +248,7 @@ public class AppBot extends TelegramLongPollingBot {
                             orderProduct.setOrder(order);
                             orderProductRepo.save(orderProduct);
                         }
-                        execute(sendMessage);
+                        webhookService.execute(sendMessage);
                         interactiveMenuSection(chatId,message);
                     }
                 }
@@ -322,14 +311,14 @@ public class AppBot extends TelegramLongPollingBot {
                 replyKeyboardMarkup.setSelective(true);
                 replyKeyboardMarkup.setResizeKeyboard(true);
                 sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                Message execute = execute(sendMessage);
+                webhookService.execute(sendMessage);
                 telegramUser.setState(BotState.SELECT_CITY);
                 saveTelegramUserToDb();
             } else if (message.hasLocation() && (telegramUser.getState().equals(BotState.FIND_CLOSE_BRANCH) || telegramUser.getState().equals(BotState.TAKE_AWAY_SELECT_TYPE))) {
                 SendMessage sendMessage = new SendMessage();
                 sendMessage.setText(ShowBotMessage(BotMessage.NOT_FOUND_BRANCH_MSG));
                 sendMessage.setChatId(chatId);
-                execute(sendMessage);
+                webhookService.execute(sendMessage);
                 telegramUser.setState(BotState.FIND_CLOSE_BRANCH);
                 saveTelegramUserToDb();
             } else if (message.hasPhoto()) {
@@ -351,7 +340,7 @@ public class AppBot extends TelegramLongPollingBot {
                 sendMessage.setText(ShowBotMessage(BotMessage.SHARE_YOUR_CONTACT_MSG));
                 sendMessage.setChatId(chatId);
                 sendMessage.setReplyMarkup(generateContactBtn());
-                Message execute = execute(sendMessage);
+                webhookService.execute(sendMessage);
                 telegramUser.setState(BotState.SHARE_CONTACT);
                 saveTelegramUserToDb();
             } else if (telegramUser.getState().equals(BotState.MAIN_SECTION)) {
@@ -359,14 +348,14 @@ public class AppBot extends TelegramLongPollingBot {
                     SendMessage sendMessage = new SendMessage();
                     sendMessage.setChatId(chatId);
                     sendMessage.setText(ShowBotMessage(BotMessage.BYD_SECTION_CONTACT_ADMIN_MSG));
-                    execute(sendMessage);
+                    webhookService.execute(sendMessage);
                     telegramUser.setState(BotState.CONTACT_ADMIN);
                     saveTelegramUserToDb();
                 } else {
                     SendMessage sendMessage = new SendMessage();
                     sendMessage.setChatId(chatId);
                     sendMessage.setText(ShowBotMessage(BotMessage.BYD_SECTION_CHANCE_TEXT_MSG));
-                    execute(sendMessage);
+                    webhookService.execute(sendMessage);
                     sendSelectSectionMsg(chatId);
                 }
             } else if (telegramUser.getState().equals(BotState.ADD_TO_BASKET)) {
@@ -432,7 +421,7 @@ public class AppBot extends TelegramLongPollingBot {
                     String msgText = telegramUser.getSelectedLang().equals("SET_LANG_UZB")? productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getUzName():productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getRuName() +
                             ShowBotMessage(BotMessage.ADDED_TO_BASKET_MSG);
                     SendMessage sendMessage = new SendMessage(chatId.toString(), msgText);
-                    execute(sendMessage);
+                    webhookService.execute(sendMessage);
                     createProductSectionByCategory(categoryRepo.findById(telegramUser.getCategoryId()).orElseThrow(), chatId);
                     telegramUser.setAmountCounter(1);
                     telegramUser.setCurrentProductSize(ProductSize.SMALL);
@@ -458,7 +447,7 @@ public class AppBot extends TelegramLongPollingBot {
         if (orderProductRepo.countAll(telegramUser.getId()) == 0) {
             String x = telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.name())?"Sizning savatingiz boʻsh \uD83D\uDE15": "Ваша корзина ещё пуста \uD83D\uDE15";
             SendMessage sendMessage = new SendMessage(chatId.toString(), x);
-            execute(sendMessage);
+            webhookService.execute(sendMessage);
             menuButtons(chatId);
             return;
         }
@@ -484,13 +473,13 @@ public class AppBot extends TelegramLongPollingBot {
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setKeyboard(rows);
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        execute(sendMessage);
+        webhookService.execute(sendMessage);
 
         SendMessage sendMessage1 = new SendMessage();
         sendMessage1.setChatId(chatId);
         sendMessage1.setText(Objects.requireNonNull(returnShowBasketMsgAsString(chatId)));
         sendMessage1.setParseMode(ParseMode.HTML);
-        execute(sendMessage1);
+        webhookService.execute(sendMessage1);
 
         SendMessage sendMessage2 = new SendMessage(chatId.toString(), "<b>" + ShowBotMessage(BotMessage.TOTAL_AMOUNT_MSG) + "</b>" + calculateTotalBalance().toString() + " so'm");
         InlineKeyboardMarkup inlineKeyboardMarkup1 = new InlineKeyboardMarkup();
@@ -504,7 +493,7 @@ public class AppBot extends TelegramLongPollingBot {
         inlineKeyboardMarkup1.setKeyboard(rows2);
         sendMessage2.setReplyMarkup(inlineKeyboardMarkup1);
         sendMessage2.setParseMode(ParseMode.HTML);
-        execute(sendMessage2);
+        webhookService.execute(sendMessage2);
         telegramUser.setState(BotState.SHOW_BASKET_STATE);
         saveTelegramUserToDb();
     }
@@ -532,7 +521,7 @@ public class AppBot extends TelegramLongPollingBot {
         DeleteMessage deleteMessage = new DeleteMessage();
         deleteMessage.setMessageId(telegramUser.getAddBasketMsgId());
         deleteMessage.setChatId(chatId);
-        execute(deleteMessage);
+        webhookService.execute(deleteMessage);
     }
 
     private void editMarkup(Long chatId) throws TelegramApiException {
@@ -540,7 +529,7 @@ public class AppBot extends TelegramLongPollingBot {
         editMessageReplyMarkup.setChatId(chatId);
         editMessageReplyMarkup.setMessageId(telegramUser.getAddBasketMsgId());
         editMessageReplyMarkup.setReplyMarkup(getAddBasketInlineKeyboard(chatId));
-        execute(editMessageReplyMarkup);
+        webhookService.execute(editMessageReplyMarkup);
     }
 
     private void editCaption(Long chatId) throws TelegramApiException {
@@ -548,7 +537,7 @@ public class AppBot extends TelegramLongPollingBot {
         editMessageCaption.setMessageId(telegramUser.getAddBasketMsgId());
         editMessageCaption.setChatId(chatId);
         editMessageCaption.setCaption(getCaption(productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow()));
-        execute(editMessageCaption);
+        webhookService.execute(editMessageCaption);
     }
 
     private void addBasketSection(Product product, Long chatId) throws TelegramApiException {
@@ -556,7 +545,7 @@ public class AppBot extends TelegramLongPollingBot {
         ReplyKeyboardRemove replyKeyboardRemove = new ReplyKeyboardRemove();
         replyKeyboardRemove.setRemoveKeyboard(true);
         sendMessage.setReplyMarkup(replyKeyboardRemove);
-        execute(sendMessage);
+        webhookService.execute(sendMessage);
 
 
         SendPhoto sendPhoto = new SendPhoto();
@@ -567,7 +556,7 @@ public class AppBot extends TelegramLongPollingBot {
         InlineKeyboardMarkup inlineKeyboardMarkup = getAddBasketInlineKeyboard(chatId);
         sendPhoto.setReplyMarkup(inlineKeyboardMarkup);
 
-        Message execute = execute(sendPhoto);
+        Message execute = webhookService.execute(sendPhoto);
         telegramUser.setState(BotState.ADD_TO_BASKET);
         telegramUser.setAddBasketMsgId(execute.getMessageId());
         telegramUser.setCurrentProductId(product.getId());
@@ -723,7 +712,7 @@ public class AppBot extends TelegramLongPollingBot {
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
-        execute(sendMessage);
+        webhookService.execute(sendMessage);
         telegramUser.setState(BotState.ADD_PRODUCT_MENU);
         telegramUser.setCategoryId(category.getId());
         saveTelegramUserToDb();
@@ -732,7 +721,7 @@ public class AppBot extends TelegramLongPollingBot {
     private void interactiveMenuSection(Long chatId, Message message) throws TelegramApiException {
         SendMessage sendMessage1 = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.INTERACTIVE_LOCATION_MSG));
         sendMessage1.setParseMode(ParseMode.HTML);
-        execute(sendMessage1);
+        webhookService.execute(sendMessage1);
 
         SendMessage sendMessage2 = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.WEBPAGE_MSG));
 
@@ -747,7 +736,7 @@ public class AppBot extends TelegramLongPollingBot {
         row2.add(rows2);
         inlineKeyboardMarkup.setKeyboard(row2);
         sendMessage2.setReplyMarkup(inlineKeyboardMarkup);
-        execute(sendMessage2);
+        webhookService.execute(sendMessage2);
 
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
@@ -789,7 +778,7 @@ public class AppBot extends TelegramLongPollingBot {
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
-        execute(sendMessage);
+        webhookService.execute(sendMessage);
         telegramUser.setState(BotState.SELECT_INTERACTIVE_MENU);
         saveTelegramUserToDb();
     }
@@ -825,14 +814,14 @@ public class AppBot extends TelegramLongPollingBot {
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        Message execute = execute(sendMessage);
+        webhookService.execute(sendMessage);
     }
 
     private void sendSelectSectionMsg(Long chatId) throws TelegramApiException {
         SendMessage sendMessage1 = new SendMessage();
         sendMessage1.setChatId(chatId);
         sendMessage1.setText(ShowBotMessage(BotMessage.SELECT_MAIN_SECTION_BTN_MSG));
-        execute(sendMessage1);
+        webhookService.execute(sendMessage1);
         telegramUser.setState(BotState.MAIN_SECTION);
         saveTelegramUserToDb();
     }
@@ -863,7 +852,7 @@ public class AppBot extends TelegramLongPollingBot {
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        Message execute = execute(sendMessage);
+        webhookService.execute(sendMessage);
         telegramUser.setState(BotState.MAIN_SECTION);
         saveTelegramUserToDb();
     }
@@ -905,13 +894,13 @@ public class AppBot extends TelegramLongPollingBot {
                 .build()));
     }
 
-    @Override
-    public String getBotUsername() {
-        return "t.me/chill_burger_bot";
-    }
-
-    @Override
-    public String getBotToken() {
-        return "6727833668:AAG0IzbrQUjv19buC80ic7n4nLyrEwr25bs";
-    }
+//    @Override
+//    public String getBotUsername() {
+//        return "t.me/chill_burger_bot";
+//    }
+//
+//    @Override
+//    public String getBotToken() {
+    //        return "6727833668:AAG0IzbrQUjv19buC80ic7n4nLyrEwr25bs";
+//    }
 }

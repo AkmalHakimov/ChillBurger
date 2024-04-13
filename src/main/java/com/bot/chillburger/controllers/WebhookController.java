@@ -1,6 +1,7 @@
 package com.bot.chillburger.controllers;
 
 
+import com.bot.chillburger.telegramBot.AppBot;
 import com.bot.chillburger.telegramBot.MyBot;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +16,6 @@ public class WebhookController {
 
         @RequestMapping(value = "/callback/update",method = RequestMethod.POST)
     public void onUpdateReceived(@RequestBody Update update){
-        System.out.println("salom");
          myBot.onUpdateReceived(update);
     }
 }
