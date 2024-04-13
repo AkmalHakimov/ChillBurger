@@ -14,9 +14,9 @@ public class ChillBurgerApplication {
         SpringApplication.run(ChillBurgerApplication.class, args);
     }
 
-    @Bean
-    public TelegramBotsApi telegramBotsApi() throws TelegramApiException {
-        return new TelegramBotsApi(DefaultBotSession.class);
-    }
+//    @Bean
+//    public TelegramBotsApi telegramBotsApi() throws TelegramApiException {
+//        return new TelegramBotsApi(DefaultBotSession.class);
+//    }
 
 }

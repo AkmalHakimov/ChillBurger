@@ -59,8 +59,8 @@ public enum BotMessage {
     THIN("Yupqa","Тонкий"),
     THICK("Qalin","Толстый"),
     HOT_DOG_BURGER("Hot-dog bort","Хот-дог борт"),
-    INTERACTIVE_LOCATION_MSG("<b>\" + \" Bellissimo Buxoro \" + \"</b> \\n\" +\n" +
-            "                \"<i>\" + \" \\uD83D\\uDCCD Mustaqillik koʻchasi, 1/1, Buxoro \" + \"</i> \\n\" +\n" +
+    INTERACTIVE_LOCATION_MSG("<b> Bellissimo Buxoro </b>\n" +
+            "<i>\uD83D\uDCCD Mustaqillik koʻchasi, 1/1, Buxoro </i>\n" +
             "\uD83D\uDD53 11:00 - 04:30 ", "<b>Bellissimo Buxoro</b>\n" +
             "<i>" + "\uD83D\uDCCD улица Мустакиллик, 1/1, Бухара </i> \n" +
             "🕓 11:00 - 04:30"),

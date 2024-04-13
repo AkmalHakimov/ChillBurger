@@ -52,21 +52,21 @@ public class AutoLoader implements CommandLineRunner {
                     .uzName("Pishloqli pitsa")
                     .ruName("Пицца с сыром")
                     .price(39_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKy2YT61grTxPma2yh2dkVBQ0blzCsAAKv2TEbXtyhSDyt5amunmS2AQADAgADcwADNAQ")
                     .category(categoryRepo.findById(1).orElseThrow())
                     .build());
             productRepo.save(Product.builder()
                     .uzName("Tovuqli donar")
                     .ruName("Куриный дoнар")
                     .price(63_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKzWYT66dsfqT8haS6aqI3K6Ug26mGAAK02TEbXtyhSAzvbiH6HCXJAQADAgADcwADNAQ")
                     .category(categoryRepo.findById(1).orElseThrow())
                     .build());
             productRepo.save(Product.builder()
                     .uzName("Go'shtli miks")
                     .ruName("Мясной микc")
                     .price(92_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKyWYT6xw8fsaampWXNaN54dAHwO5iAAKt2TEbXtyhSFIBtfu8r0k6AQADAgADcwADNAQ")
                     .category(categoryRepo.findById(1).orElseThrow())
                     .build());
 
@@ -75,14 +75,14 @@ public class AutoLoader implements CommandLineRunner {
                     .uzName("Coca-Cola 0,5 l")
                     .ruName("Кока-Кола 0,5 л")
                     .price(10_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKx2YT6tnwAAHqD8aj-6H0XA7e1ixefAACpdkxG17coUiXfHo8I6ZhAQEAAwIAA3MAAzQE")
                     .category(categoryRepo.findById(2).orElseThrow())
                     .build());
             productRepo.save(Product.builder()
                     .uzName("Coca-Cola 1 l")
                     .ruName("Кока-Кола 1 л")
                     .price(14_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKx2YT6tnwAAHqD8aj-6H0XA7e1ixefAACpdkxG17coUiXfHo8I6ZhAQEAAwIAA3MAAzQE")
                     .category(categoryRepo.findById(2).orElseThrow())
                     .build());
 
@@ -91,14 +91,14 @@ public class AutoLoader implements CommandLineRunner {
                     .uzName("Sinnamon Rollar 8 ta")
                     .ruName("Роллы с Синнамоном 8 шт.")
                     .price(15_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKzGYT64ZwmlsgaH7e0CEtvLmsjF1lAAKx2TEbXtyhSAABm1pfkfNXUgEAAwIAA3MAAzQE")
                     .category(categoryRepo.findById(3).orElseThrow())
                     .build());
             productRepo.save(Product.builder()
                     .uzName("Shokoladli Fondan")
                     .ruName("Шоколадный фондан")
                     .price(19_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKyGYT6wagNlCPNYEtHn4hBrPJIo67AAKs2TEbXtyhSNh5FsCRU6rbAQADAgADcwADNAQ")
                     .category(categoryRepo.findById(3).orElseThrow())
                     .build());
             productRepo.save(Product.builder()
@@ -112,7 +112,7 @@ public class AutoLoader implements CommandLineRunner {
                     .uzName("Laymli chizkeyk")
                     .ruName("Лаймовый чизкейк")
                     .price(22_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKymYT60MWaCX44TwEpfZynsO2G8xpAAKu2TEbXtyhSP2J9tXGIShAAQADAgADcwADNAQ")
                     .category(categoryRepo.findById(3).orElseThrow())
                     .build());
 
@@ -121,14 +121,14 @@ public class AutoLoader implements CommandLineRunner {
                     .uzName("Grecheskiy salat")
                     .ruName("Салат Греческий")
                     .price(24_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKzmYT6_JiFyY7PYrBMi0EbYbRRd7jAAK32TEbXtyhSO-6i4CSEv8fAQADAgADcwADNAQ")
                     .category(categoryRepo.findById(4).orElseThrow())
                     .build());
             productRepo.save(Product.builder()
                     .uzName("Sezar salat")
                     .ruName("Салат Цезарь")
                     .price(24_000)
-                    .photoId("AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ")
+                    .photoId("AgACAgIAAxkBAAIKxWYT6oQ9diXRd401SaQkLWW1D92YAAKi2TEbXtyhSB1j7ZwjyLjXAQADAgADcwADNAQ")
                     .category(categoryRepo.findById(4).orElseThrow())
                     .build());
         }

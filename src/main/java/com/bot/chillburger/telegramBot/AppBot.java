@@ -23,6 +23,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.time.LocalDateTime;
@@ -30,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Component
+//@Component
 @RequiredArgsConstructor
 public class AppBot extends TelegramLongPollingBot {
 
@@ -740,7 +741,7 @@ public class AppBot extends TelegramLongPollingBot {
         List<List<InlineKeyboardButton>> row2 = new ArrayList<>();
         InlineKeyboardButton button3 = new InlineKeyboardButton();
         button3.setText(ShowBotMessage(BotMessage.WEBPAGE_BTN_MSG));
-        button3.setCallbackData("123");
+        button3.setWebApp(new WebAppInfo("https://khakimovv.uz/"));
 
         rows2.add(button3);
         row2.add(rows2);
