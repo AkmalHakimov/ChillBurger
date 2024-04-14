@@ -65,7 +65,9 @@ public enum BotMessage {
             "<i>" + "\uD83D\uDCCD улица Мустакиллик, 1/1, Бухара </i> \n" +
             "🕓 11:00 - 04:30"),
     WEBPAGE_MSG("Yangi va qulay menyu orqali buyurtma bering \uD83D\uDC47\uD83D\uDE09","Закажите через новое удобное меню \uD83D\uDC47\uD83D\uDE09"),
-    WEBPAGE_BTN_MSG("\uD83E\uDD29 Interactive menyu","\uD83E\uDD29 Интерактивное меню");
+    WEBPAGE_BTN_MSG("\uD83E\uDD29 Interactive menyu","\uD83E\uDD29 Интерактивное меню"),
+    JOIN_CHANNEL_MSG("<b> Iltimos botni ishlatish uchun ushbu kanalga qo'shiling: </b>","<b> Пожалуйста, присоединяйтесь к этому каналу, затем введите команду /start </b> \n"),
+    JOIN_MSG("Qo'shilish","Присоединение");
 
 
 

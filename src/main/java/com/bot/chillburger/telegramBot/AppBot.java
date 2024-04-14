@@ -3,20 +3,21 @@ package com.bot.chillburger.telegramBot;
 import com.bot.chillburger.entity.*;
 import com.bot.chillburger.enums.*;
 import com.bot.chillburger.repository.*;
-import com.bot.chillburger.services.webhookService.WebhookService;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChatMember;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageCaption;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.objects.*;
+import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMember;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -33,24 +34,52 @@ import java.util.List;
 import java.util.Objects;
 
 @Component
-@RequiredArgsConstructor
-public class AppBot {
+public class AppBot extends TelegramLongPollingBot {
 
     TelegramUser telegramUser = null;
-    String photoId = "AgACAgIAAxkBAAIC92X_p57041LDAXn2QJTH_9EK1-2tAAL-3DEbTbX5SxbzedSuLC2lAQADAgADcwADNAQ";
     String adminChatId = "1539471133";
+    String channelLink = "https://t.me/+fMG5UDuKZC5iMzBi";
+    String channelId = "-1001705320161";
     private final TelegramUserRepo telegramUserRepo;
     private final CategoryRepo categoryRepo;
     private final ProductRepo productRepo;
     private final OrderProductRepo orderProductRepo;
     private final OrderRepo orderRepo;
-    private final WebhookService webhookService;
 
     @SneakyThrows
+    @Autowired
+    public AppBot(TelegramBotsApi api,TelegramUserRepo telegramUserRepo, CategoryRepo categoryRepo, ProductRepo productRepo, OrderProductRepo orderProductRepo, OrderRepo orderRepo) {
+        api.registerBot(this);
+        this.telegramUserRepo = telegramUserRepo;
+        this.categoryRepo = categoryRepo;
+        this.productRepo = productRepo;
+        this.orderProductRepo = orderProductRepo;
+        this.orderRepo = orderRepo;
+    }
+
+    @SneakyThrows
+    @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage()) {
-            Message message = update.getMessage();
+            Message message = update.getMessage();GetChatMember chatMember = new GetChatMember(channelId,message.getFrom().getId());
+            ChatMember execute = execute(chatMember);
             Long chatId = message.getChatId();
+            if(execute.getStatus().equals("left")){
+                SendMessage sendMessage = new SendMessage();
+                sendMessage.setChatId(chatId);
+                sendMessage.setText(BotMessage.JOIN_CHANNEL_MSG.getTextRu());
+                sendMessage.setParseMode(ParseMode.HTML);
+                List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+                List<InlineKeyboardButton> row = new ArrayList<>();
+                InlineKeyboardButton button = new InlineKeyboardButton();
+                button.setUrl(channelLink);
+                button.setText(BotMessage.JOIN_MSG.getTextRu());
+                row.add(button);
+                rows.add(row);
+                sendMessage.setReplyMarkup(new InlineKeyboardMarkup(rows));
+                execute(sendMessage);
+                return;
+            }
             boolean checkIfUserAvailableInDb = telegramUserRepo.findByChatId(chatId) == null;
             telegramUser = findUserByChatId(chatId);
             if (message.hasText()) {
@@ -76,7 +105,7 @@ public class AppBot {
                         sendMessage.setReplyMarkup(inlineKeyboardMarkup);
                         telegramUser.setState(BotState.CHOOSE_LANG);
                         saveTelegramUserToDb();
-                        webhookService.execute(sendMessage);
+                        execute(sendMessage);
                     } else {
                         menuButtons(chatId);
                     }
@@ -117,7 +146,7 @@ public class AppBot {
                         rows.add(row3);
                         inlineKeyboardMarkup.setKeyboard(rows);
                         sendMessage.setReplyMarkup(inlineKeyboardMarkup);
-                        webhookService.execute(sendMessage);
+                        execute(sendMessage);
                         telegramUser.setState(BotState.MAIN_SECTION);
                         saveTelegramUserToDb();
                         sendSelectSectionMsg(chatId);
@@ -129,13 +158,13 @@ public class AppBot {
                         showBasket(chatId);
                     }else if(text.equals(ShowBotMessage(BotMessage.CONTACT_BTN_MSG))){
                         SendMessage sendMessage = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.CONTACT_MSG));
-                        webhookService.execute(sendMessage);
+                        execute(sendMessage);
                     }
                 } else if (telegramUser.getState().equals(BotState.CONTACT_ADMIN)) {
                     SendMessage sendMessage = new SendMessage();
                     sendMessage.setChatId(adminChatId);
                     sendMessage.setText(text);
-                    webhookService.execute(sendMessage);
+                    execute(sendMessage);
                     sendSelectSectionMsg(chatId);
                 } else if (telegramUser.getState().equals(BotState.MENU_SELECT_DELIVERY_TYPE)) {
                     if (checkStateForBackBtn(text)) {
@@ -161,7 +190,7 @@ public class AppBot {
                         replyKeyboardMarkup.setSelective(true);
                         replyKeyboardMarkup.setResizeKeyboard(true);
                         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                        webhookService.execute(sendMessage);
+                        execute(sendMessage);
                         telegramUser.setState(BotState.FIND_CLOSE_BRANCH);
                         saveTelegramUserToDb();
                     } else if (text.equals(ShowBotMessage(BotMessage.MAIN_MENU_TAKE_AWAY_BTN_MSG))) {
@@ -188,7 +217,7 @@ public class AppBot {
                         replyKeyboardMarkup.setSelective(true);
                         replyKeyboardMarkup.setResizeKeyboard(true);
                         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                        webhookService.execute(sendMessage);
+                        execute(sendMessage);
                         telegramUser.setState(BotState.TAKE_AWAY_SELECT_TYPE);
                         saveTelegramUserToDb();
                     }
@@ -248,7 +277,7 @@ public class AppBot {
                             orderProduct.setOrder(order);
                             orderProductRepo.save(orderProduct);
                         }
-                        webhookService.execute(sendMessage);
+                        execute(sendMessage);
                         interactiveMenuSection(chatId,message);
                     }
                 }
@@ -311,14 +340,14 @@ public class AppBot {
                 replyKeyboardMarkup.setSelective(true);
                 replyKeyboardMarkup.setResizeKeyboard(true);
                 sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                webhookService.execute(sendMessage);
+                execute(sendMessage);
                 telegramUser.setState(BotState.SELECT_CITY);
                 saveTelegramUserToDb();
             } else if (message.hasLocation() && (telegramUser.getState().equals(BotState.FIND_CLOSE_BRANCH) || telegramUser.getState().equals(BotState.TAKE_AWAY_SELECT_TYPE))) {
                 SendMessage sendMessage = new SendMessage();
                 sendMessage.setText(ShowBotMessage(BotMessage.NOT_FOUND_BRANCH_MSG));
                 sendMessage.setChatId(chatId);
-                webhookService.execute(sendMessage);
+                execute(sendMessage);
                 telegramUser.setState(BotState.FIND_CLOSE_BRANCH);
                 saveTelegramUserToDb();
             } else if (message.hasPhoto()) {
@@ -340,7 +369,7 @@ public class AppBot {
                 sendMessage.setText(ShowBotMessage(BotMessage.SHARE_YOUR_CONTACT_MSG));
                 sendMessage.setChatId(chatId);
                 sendMessage.setReplyMarkup(generateContactBtn());
-                webhookService.execute(sendMessage);
+                execute(sendMessage);
                 telegramUser.setState(BotState.SHARE_CONTACT);
                 saveTelegramUserToDb();
             } else if (telegramUser.getState().equals(BotState.MAIN_SECTION)) {
@@ -348,14 +377,14 @@ public class AppBot {
                     SendMessage sendMessage = new SendMessage();
                     sendMessage.setChatId(chatId);
                     sendMessage.setText(ShowBotMessage(BotMessage.BYD_SECTION_CONTACT_ADMIN_MSG));
-                    webhookService.execute(sendMessage);
+                    execute(sendMessage);
                     telegramUser.setState(BotState.CONTACT_ADMIN);
                     saveTelegramUserToDb();
                 } else {
                     SendMessage sendMessage = new SendMessage();
                     sendMessage.setChatId(chatId);
                     sendMessage.setText(ShowBotMessage(BotMessage.BYD_SECTION_CHANCE_TEXT_MSG));
-                    webhookService.execute(sendMessage);
+                    execute(sendMessage);
                     sendSelectSectionMsg(chatId);
                 }
             } else if (telegramUser.getState().equals(BotState.ADD_TO_BASKET)) {
@@ -421,7 +450,7 @@ public class AppBot {
                     String msgText = telegramUser.getSelectedLang().equals("SET_LANG_UZB")? productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getUzName():productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow().getRuName() +
                             ShowBotMessage(BotMessage.ADDED_TO_BASKET_MSG);
                     SendMessage sendMessage = new SendMessage(chatId.toString(), msgText);
-                    webhookService.execute(sendMessage);
+                    execute(sendMessage);
                     createProductSectionByCategory(categoryRepo.findById(telegramUser.getCategoryId()).orElseThrow(), chatId);
                     telegramUser.setAmountCounter(1);
                     telegramUser.setCurrentProductSize(ProductSize.SMALL);
@@ -447,7 +476,7 @@ public class AppBot {
         if (orderProductRepo.countAll(telegramUser.getId()) == 0) {
             String x = telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.name())?"Sizning savatingiz boʻsh \uD83D\uDE15": "Ваша корзина ещё пуста \uD83D\uDE15";
             SendMessage sendMessage = new SendMessage(chatId.toString(), x);
-            webhookService.execute(sendMessage);
+            execute(sendMessage);
             menuButtons(chatId);
             return;
         }
@@ -473,13 +502,13 @@ public class AppBot {
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setKeyboard(rows);
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        webhookService.execute(sendMessage);
+        execute(sendMessage);
 
         SendMessage sendMessage1 = new SendMessage();
         sendMessage1.setChatId(chatId);
         sendMessage1.setText(Objects.requireNonNull(returnShowBasketMsgAsString(chatId)));
         sendMessage1.setParseMode(ParseMode.HTML);
-        webhookService.execute(sendMessage1);
+        execute(sendMessage1);
 
         SendMessage sendMessage2 = new SendMessage(chatId.toString(), "<b>" + ShowBotMessage(BotMessage.TOTAL_AMOUNT_MSG) + "</b>" + calculateTotalBalance().toString() + " so'm");
         InlineKeyboardMarkup inlineKeyboardMarkup1 = new InlineKeyboardMarkup();
@@ -493,7 +522,7 @@ public class AppBot {
         inlineKeyboardMarkup1.setKeyboard(rows2);
         sendMessage2.setReplyMarkup(inlineKeyboardMarkup1);
         sendMessage2.setParseMode(ParseMode.HTML);
-        webhookService.execute(sendMessage2);
+        execute(sendMessage2);
         telegramUser.setState(BotState.SHOW_BASKET_STATE);
         saveTelegramUserToDb();
     }
@@ -521,7 +550,7 @@ public class AppBot {
         DeleteMessage deleteMessage = new DeleteMessage();
         deleteMessage.setMessageId(telegramUser.getAddBasketMsgId());
         deleteMessage.setChatId(chatId);
-        webhookService.execute(deleteMessage);
+        execute(deleteMessage);
     }
 
     private void editMarkup(Long chatId) throws TelegramApiException {
@@ -529,7 +558,7 @@ public class AppBot {
         editMessageReplyMarkup.setChatId(chatId);
         editMessageReplyMarkup.setMessageId(telegramUser.getAddBasketMsgId());
         editMessageReplyMarkup.setReplyMarkup(getAddBasketInlineKeyboard(chatId));
-        webhookService.execute(editMessageReplyMarkup);
+        execute(editMessageReplyMarkup);
     }
 
     private void editCaption(Long chatId) throws TelegramApiException {
@@ -537,7 +566,7 @@ public class AppBot {
         editMessageCaption.setMessageId(telegramUser.getAddBasketMsgId());
         editMessageCaption.setChatId(chatId);
         editMessageCaption.setCaption(getCaption(productRepo.findById(telegramUser.getCurrentProductId()).orElseThrow()));
-        webhookService.execute(editMessageCaption);
+        execute(editMessageCaption);
     }
 
     private void addBasketSection(Product product, Long chatId) throws TelegramApiException {
@@ -545,18 +574,18 @@ public class AppBot {
         ReplyKeyboardRemove replyKeyboardRemove = new ReplyKeyboardRemove();
         replyKeyboardRemove.setRemoveKeyboard(true);
         sendMessage.setReplyMarkup(replyKeyboardRemove);
-        webhookService.execute(sendMessage);
+        execute(sendMessage);
 
 
         SendPhoto sendPhoto = new SendPhoto();
         sendPhoto.setChatId(chatId);
         sendPhoto.setPhoto(new InputFile(product.getPhotoId()));
         sendPhoto.setCaption(getCaption(product));
-//        sendPhoto.setCaption("123");
         InlineKeyboardMarkup inlineKeyboardMarkup = getAddBasketInlineKeyboard(chatId);
         sendPhoto.setReplyMarkup(inlineKeyboardMarkup);
 
-        Message execute = webhookService.execute(sendPhoto);
+        Message execute = execute(sendPhoto);
+        System.out.println(execute.getMessageId());
         telegramUser.setState(BotState.ADD_TO_BASKET);
         telegramUser.setAddBasketMsgId(execute.getMessageId());
         telegramUser.setCurrentProductId(product.getId());
@@ -712,7 +741,7 @@ public class AppBot {
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
-        webhookService.execute(sendMessage);
+        execute(sendMessage);
         telegramUser.setState(BotState.ADD_PRODUCT_MENU);
         telegramUser.setCategoryId(category.getId());
         saveTelegramUserToDb();
@@ -721,7 +750,7 @@ public class AppBot {
     private void interactiveMenuSection(Long chatId, Message message) throws TelegramApiException {
         SendMessage sendMessage1 = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.INTERACTIVE_LOCATION_MSG));
         sendMessage1.setParseMode(ParseMode.HTML);
-        webhookService.execute(sendMessage1);
+        execute(sendMessage1);
 
         SendMessage sendMessage2 = new SendMessage(chatId.toString(),ShowBotMessage(BotMessage.WEBPAGE_MSG));
 
@@ -736,7 +765,7 @@ public class AppBot {
         row2.add(rows2);
         inlineKeyboardMarkup.setKeyboard(row2);
         sendMessage2.setReplyMarkup(inlineKeyboardMarkup);
-        webhookService.execute(sendMessage2);
+        execute(sendMessage2);
 
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
@@ -778,7 +807,7 @@ public class AppBot {
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
-        webhookService.execute(sendMessage);
+        execute(sendMessage);
         telegramUser.setState(BotState.SELECT_INTERACTIVE_MENU);
         saveTelegramUserToDb();
     }
@@ -814,14 +843,14 @@ public class AppBot {
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        webhookService.execute(sendMessage);
+        execute(sendMessage);
     }
 
     private void sendSelectSectionMsg(Long chatId) throws TelegramApiException {
         SendMessage sendMessage1 = new SendMessage();
         sendMessage1.setChatId(chatId);
         sendMessage1.setText(ShowBotMessage(BotMessage.SELECT_MAIN_SECTION_BTN_MSG));
-        webhookService.execute(sendMessage1);
+        execute(sendMessage1);
         telegramUser.setState(BotState.MAIN_SECTION);
         saveTelegramUserToDb();
     }
@@ -852,7 +881,7 @@ public class AppBot {
         replyKeyboardMarkup.setSelective(true);
         replyKeyboardMarkup.setResizeKeyboard(true);
         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-        webhookService.execute(sendMessage);
+        execute(sendMessage);
         telegramUser.setState(BotState.MAIN_SECTION);
         saveTelegramUserToDb();
     }
@@ -877,7 +906,7 @@ public class AppBot {
     }
 
     private String ShowBotMessage(BotMessage botMessage) {
-        if (telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString())) {
+            if (telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_UZB.toString())) {
             return botMessage.getTextUzb();
         } else if (telegramUser.getSelectedLang().equals(BotCallBackData.SET_LANG_RU.toString())) {
             return botMessage.getTextRu();
@@ -894,13 +923,13 @@ public class AppBot {
                 .build()));
     }
 
-//    @Override
-//    public String getBotUsername() {
-//        return "t.me/chill_burger_bot";
-//    }
-//
-//    @Override
-//    public String getBotToken() {
-    //        return "6727833668:AAG0IzbrQUjv19buC80ic7n4nLyrEwr25bs";
-//    }
+    @Override
+    public String getBotUsername() {
+        return "t.me/chill_burger_bot";
+    }
+
+    @Override
+    public String getBotToken() {
+            return "6727833668:AAG0IzbrQUjv19buC80ic7n4nLyrEwr25bs";
+    }
 }

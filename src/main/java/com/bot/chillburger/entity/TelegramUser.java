@@ -1,5 +1,6 @@
 package com.bot.chillburger.entity;
 
+import com.bot.chillburger.enums.BotCallBackData;
 import com.bot.chillburger.enums.BotState;
 import com.bot.chillburger.enums.ProductSize;
 import com.bot.chillburger.enums.ProductType;
@@ -42,6 +43,9 @@ public class TelegramUser {
 
     @PrePersist
     public void prePersist() {
+        if(selectedLang == null){
+            selectedLang = BotCallBackData.SET_LANG_RU.name();
+        }
         if (amountCounter == null) {
             amountCounter = 1; // Set default value
         }
